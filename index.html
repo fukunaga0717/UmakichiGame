@@ -236,6 +236,27 @@ button{font-family:inherit;}
 .visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;}
 .card-label{font-size:clamp(18px,6vw,26px); font-weight:900; color:var(--ink); text-align:center;}
 
+#correct-overlay{
+  position:absolute;
+  inset:0;
+  z-index:22;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  font-size:min(34vw,160px);
+  font-weight:900;
+  color:#fff;
+  text-shadow:0 4px 0 #178f45, 0 0 18px rgba(255,255,255,.75);
+}
+#correct-overlay.active{animation:correctPop .36s ease;}
+@keyframes correctPop{
+  0%{opacity:0; transform:scale(.35) rotate(-10deg);}
+  35%{opacity:1; transform:scale(1.18) rotate(0deg);}
+  100%{opacity:0; transform:scale(1) rotate(0deg);}
+}
+
 @media (max-height: 720px){
   .plate{
     width:clamp(68px,22vw,100px);
@@ -394,6 +415,7 @@ button{font-family:inherit;}
       <div id="card-layer">
         <div id="meat-card" class="meat-card"></div>
       </div>
+      <div id="correct-overlay">○</div>
       <div id="flash-overlay"></div>
       <div id="gameover-overlay">
         <div class="gameover-box">
@@ -648,6 +670,7 @@ var cardLayer = document.getElementById("card-layer");
 var meatCard = document.getElementById("meat-card");
 var hudTimer = document.getElementById("hud-timer");
 var hudScore = document.getElementById("hud-score");
+var correctOverlay = document.getElementById("correct-overlay");
 var flashOverlay = document.getElementById("flash-overlay");
 var gameoverOverlay = document.getElementById("gameover-overlay");
 
@@ -762,6 +785,13 @@ function spawnCard(){
 
 function updateScoreDisplay(){
   hudScore.textContent = "SCORE " + state.score;
+}
+
+function showCorrectFeedback(){
+  if(!correctOverlay) return;
+  correctOverlay.classList.remove("active");
+  void correctOverlay.offsetWidth;
+  correctOverlay.classList.add("active");
 }
 
 function startGame(){
@@ -910,6 +940,7 @@ function handleResolution(corner, plateEl){
   if(correct){
     state.score++;
     updateScoreDisplay();
+    showCorrectFeedback();
     beep(880,0.09,"triangle");
     vibrate(20);
     plateEl.classList.add("bounce");
