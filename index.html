@@ -10,18 +10,15 @@
    画像の差し替え方法（お店の方向け）
    images/akami.png            … 赤身の写真
    images/tategami.png         … タテガミの写真
-   images/futagoe.png          … フタエゴの写真
-   images/tencho.png           … 店長の写真
-   images/koune.png            … コウネの写真（レベル2）
-   images/reba.png             … レバーの写真（レベル2）
-   images/hire.png             … ヒレの写真（レベル2）
-   images/dummy_shippo.png         … ニセ部位「尻尾トロ」用（任意・レベル2）
-   images/dummy_hizume.png         … ニセ部位「ヒヅメステーキ」用（任意）
-   images/dummy_hanasaki.png       … ニセ部位「鼻先スジ」用（任意）
-   images/dummy_tategami_extra.png … ニセ部位「たてがみエキストラ」用（任意）
+   images/futaego.png          … フタエゴの写真
+   images/hatsu.png            … ハツの写真
+   images/tan.png              … タンの写真
+   images/karubi.png           … カルビの写真
+   images/reba.png             … レバーの写真
+   images/shimofuri.png        … 霜降りの写真
    上記ファイル名で index.html と同じ階層の "images" フォルダに
    画像を置くだけで、絵文字から自動的に写真表示に切り替わります。
-   （画像が無い場合は今まで通り絵文字が表示されます）
+   （画像が無い場合は絵文字が表示されます）
    ========================================================= */
 
 :root{
@@ -205,10 +202,8 @@ button{font-family:inherit;}
 .plate[data-corner="BL"]{bottom:10px; left:10px;}
 .plate[data-corner="BR"]{bottom:10px; right:10px;}
 .plate.trap{border-color:#8a8a8a; background:radial-gradient(circle at 35% 30%, #fdfdfd, #d8d8d8 70%, #b3b3b3 100%);}
-.plate .visual{width:clamp(30px,9vw,46px); height:clamp(30px,9vw,46px);}
-.plate .visual-emoji{font-size:clamp(24px,8vw,40px); line-height:1;}
 .plate-label{
-  margin-top:2px; font-size:clamp(10px,3vw,13px); font-weight:900; color:var(--ink);
+  margin-top:0; font-size:clamp(13px,3.8vw,16px); font-weight:900; color:var(--ink);
   white-space:nowrap;
 }
 @keyframes plateBounce{0%{transform:scale(1);}30%{transform:scale(1.18);}60%{transform:scale(.94);}100%{transform:scale(1);}}
@@ -219,21 +214,48 @@ button{font-family:inherit;}
 #card-layer{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;}
 .meat-card{
   pointer-events:auto;
-  width:clamp(118px,32vw,168px);
-  height:clamp(148px,38vw,196px);
+  width:clamp(126px,34vw,176px);
+  height:clamp(158px,40vw,206px);
   background:linear-gradient(180deg,#fffaf0,var(--cream));
   border:4px solid var(--red);
   border-radius:14px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
   box-shadow:0 10px 22px rgba(0,0,0,.55);
   touch-action:none;
   will-change:transform;
   padding:10px;
 }
-.meat-card .visual{width:clamp(48px,14vw,72px); height:clamp(48px,14vw,72px); display:flex; align-items:center; justify-content:center;}
+.meat-card.has-image{
+  width:clamp(150px,42vw,210px);
+  height:clamp(150px,42vw,210px);
+  padding:10px;
+}
+.meat-card .visual{width:clamp(82px,22vw,118px); height:clamp(82px,22vw,118px); display:flex; align-items:center; justify-content:center;}
+.meat-card.has-image .visual{width:100%; height:100%;}
 .meat-card .visual-emoji{font-size:clamp(38px,12vw,60px); line-height:1;}
-.meat-card .visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px;}
+.visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;}
 .card-label{font-size:clamp(18px,6vw,26px); font-weight:900; color:var(--ink); text-align:center;}
+
+#correct-overlay{
+  position:absolute;
+  inset:0;
+  z-index:22;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  font-size:min(34vw,160px);
+  font-weight:900;
+  color:#fff;
+  text-shadow:0 4px 0 #178f45, 0 0 18px rgba(255,255,255,.75);
+}
+#correct-overlay.active{animation:correctPop .36s ease;}
+@keyframes correctPop{
+  0%{opacity:0; transform:scale(.35) rotate(-10deg);}
+  35%{opacity:1; transform:scale(1.18) rotate(0deg);}
+  100%{opacity:0; transform:scale(1) rotate(0deg);}
+}
 
 @media (max-height: 720px){
   .plate{
@@ -243,15 +265,30 @@ button{font-family:inherit;}
   }
 
   .plate-label{
-    font-size:clamp(9px,2.7vw,12px);
+    font-size:clamp(12px,3.4vw,15px);
     max-width:92%;
     overflow:hidden;
     text-overflow:ellipsis;
   }
 
   .meat-card{
-    width:clamp(110px,30vw,150px);
-    height:clamp(138px,36vw,180px);
+    width:clamp(116px,31vw,156px);
+    height:clamp(148px,37vw,186px);
+  }
+
+  .meat-card.has-image{
+    width:clamp(140px,39vw,190px);
+    height:clamp(140px,39vw,190px);
+  }
+
+  .meat-card .visual{
+    width:clamp(76px,20vw,104px);
+    height:clamp(76px,20vw,104px);
+  }
+
+  .meat-card.has-image .visual{
+    width:100%;
+    height:100%;
   }
 }
 
@@ -350,7 +387,7 @@ button{font-family:inherit;}
       </button>
       <button type="button" class="level-btn" data-level="2">
         <span class="level-num">Lv.2</span>
-        <span class="level-name">ニセ部位まじり</span>
+        <span class="level-name">対象外まじり</span>
       </button>
       <button type="button" class="level-btn" data-level="3" disabled>
         <span class="level-num">Lv.3</span>
@@ -378,6 +415,7 @@ button{font-family:inherit;}
       <div id="card-layer">
         <div id="meat-card" class="meat-card"></div>
       </div>
+      <div id="correct-overlay">○</div>
       <div id="flash-overlay"></div>
       <div id="gameover-overlay">
         <div class="gameover-box">
@@ -440,24 +478,27 @@ button{font-family:inherit;}
 var ASSETS = {
   akami:    { emoji:"🥩", img:"images/akami.png" },
   tategami: { emoji:"🤍", img:"images/tategami.png" },
-  futagoe:  { emoji:"🥓", img:"images/futagoe.png" },
-  tencho:   { emoji:"🧑‍🍳", img:"images/tencho.png" },
-  koune:    { emoji:"🍖", img:"images/koune.png" },
+  futagoe:  { emoji:"🥓", img:"images/futaego.png" },
+  hatsu:    { emoji:"🫀", img:"images/hatsu.png" },
+  tan:      { emoji:"👅", img:"images/tan.png" },
+  karubi:   { emoji:"🥩", img:"images/karubi.png" },
   reba:     { emoji:"🫀", img:"images/reba.png" },
-  hire:     { emoji:"🍗", img:"images/hire.png" },
-  shippo:         { emoji:"🃏", img:"images/dummy_shippo.png" },
-  hizume:         { emoji:"🃏", img:"images/dummy_hizume.png" },
-  hanasaki:       { emoji:"🃏", img:"images/dummy_hanasaki.png" },
-  tategami_extra: { emoji:"🃏", img:"images/dummy_tategami_extra.png" }
+  shimofuri:{ emoji:"🥩", img:"images/shimofuri.png" },
+  tencho:   { emoji:"🧑‍🍳", img:null },
+  shippo:         { emoji:"🃏", img:null },
+  hizume:         { emoji:"🃏", img:null },
+  hanasaki:       { emoji:"🃏", img:null },
+  tategami_extra: { emoji:"🃏", img:null }
 };
 
 var LABELS = {
-  akami:"赤身", tategami:"タテガミ", futagoe:"フタエゴ", koune:"コウネ", reba:"レバー", hire:"ヒレ",
+  akami:"赤身", tategami:"タテガミ", futagoe:"フタエゴ", hatsu:"ハツ", tan:"タン", karubi:"カルビ", reba:"レバー", shimofuri:"霜降り",
   tencho:"店長",
   shippo:"尻尾トロ", hizume:"ヒヅメステーキ", hanasaki:"鼻先スジ", tategami_extra:"たてがみエキストラ"
 };
 
 var CORNER_DIR_LABELS = { TL:"左上", TR:"右上", BL:"左下", BR:"右下" };
+var OUT_OF_TARGET_LABEL = "対象外";
 
 var LEVELS = [
   {
@@ -477,9 +518,7 @@ var LEVELS = [
     timeMs:30000,
     bossKey:"tencho",
     // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
-    cutPool:["akami","tategami","futagoe","koune","reba","hire"],
-    // ニセ部位プール(実在しない部位名。店長皿=ゴミ箱行きが正解)
-    dummyPool:["shippo","hizume","hanasaki","tategami_extra"]
+    cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"]
   }
 ];
 
@@ -551,27 +590,32 @@ function vibrate(pattern){
 
 /* ---------------- ビジュアル生成(絵文字/画像フォールバック) ---------------- */
 function buildVisual(key){
-  var asset = ASSETS[key];
+  var asset = ASSETS[key] || { emoji:"？", img:null };
   var wrap = document.createElement("div");
   wrap.className = "visual";
 
-  var emoji = document.createElement("div");
-  emoji.className = "visual-emoji";
-  emoji.textContent = asset.emoji;
+  function appendEmoji(){
+    var emoji = document.createElement("div");
+    emoji.className = "visual-emoji";
+    emoji.textContent = asset.emoji;
+    wrap.appendChild(emoji);
+  }
 
-  var img = document.createElement("img");
-  img.className = "visual-img";
-  img.style.display = "none";
-  img.alt = "";
-  img.draggable = false;
-  img.addEventListener("load", function(){
-    img.style.display = "block";
-    emoji.style.display = "none";
-  });
-  img.src = asset.img;
+  if(asset.img){
+    var img = document.createElement("img");
+    img.className = "visual-img";
+    img.alt = "";
+    img.draggable = false;
+    img.addEventListener("error", function(){
+      wrap.innerHTML = "";
+      appendEmoji();
+    });
+    img.src = asset.img;
+    wrap.appendChild(img);
+  } else {
+    appendEmoji();
+  }
 
-  wrap.appendChild(emoji);
-  wrap.appendChild(img);
   return wrap;
 }
 
@@ -626,6 +670,7 @@ var cardLayer = document.getElementById("card-layer");
 var meatCard = document.getElementById("meat-card");
 var hudTimer = document.getElementById("hud-timer");
 var hudScore = document.getElementById("hud-score");
+var correctOverlay = document.getElementById("correct-overlay");
 var flashOverlay = document.getElementById("flash-overlay");
 var gameoverOverlay = document.getElementById("gameover-overlay");
 
@@ -646,6 +691,7 @@ function buildRoundData(level){
 
   var corners = shuffleArray(["TL","TR","BL"]);
   var chosenCuts = shuffleArray(level.cutPool.slice()).slice(0, 3);
+  var dummyCuts = level.cutPool.filter(function(key){ return chosenCuts.indexOf(key) === -1; });
   var targets = chosenCuts.map(function(key, i){
     return { key:key, label:LABELS[key], corner:corners[i], trap:false };
   });
@@ -656,7 +702,7 @@ function buildRoundData(level){
     weightedKeys.push(key, key, key);
   });
   weightedKeys.push(level.bossKey);
-  level.dummyPool.forEach(function(key){ weightedKeys.push(key); });
+  shuffleArray(dummyCuts.slice()).forEach(function(key){ weightedKeys.push(key); });
 
   return { targets: targets, weightedKeys: weightedKeys };
 }
@@ -672,13 +718,11 @@ function buildPlates(){
     plate.dataset.corner = t.corner;
     plate.dataset.key = t.key;
 
-    plate.appendChild(buildVisual(t.key));
-
+    // 四隅の皿には料理画像を表示しない。画像は中央カードのみ表示する。
     var label = document.createElement("div");
     label.className = "plate-label";
-    // 店長の皿は正体を隠すため、皿の表示ラベルだけ固定で「捨てる」にする
-    // (中央に出るカード自体の表示名は resolveCardMeta 側で "店長" のまま)
-    label.textContent = t.trap ? "捨てる" : t.label;
+    // 店長や対象外カード用に、右下の皿は「対象外」とする。
+    label.textContent = t.trap ? OUT_OF_TARGET_LABEL : t.label;
     plate.appendChild(label);
 
     gameArea.appendChild(plate);
@@ -689,15 +733,15 @@ function getPlateEl(corner){
   return gameArea.querySelector('.plate[data-corner="'+corner+'"]');
 }
 
-// カードのキーから「本物の部位/店長/ニセ部位」を判定し、正解の皿(コーナー)を決める
-// ニセ部位は実在しないので、店長のお皿(トラップ枠=ゴミ箱)に捨てるのが正解
+// カードのキーから「本物の部位/店長/対象外部位」を判定し、正解の皿(コーナー)を決める
+// 今回の皿にない実在部位は、対象外の皿が正解
 function resolveCardMeta(key){
   var target = state.round.targets.filter(function(t){ return t.key === key; })[0];
   if(target){
-    return { key:key, label:target.label, correctLabel:target.label, correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
+    return { key:key, label:target.label, correctLabel:(target.trap ? OUT_OF_TARGET_LABEL : target.label), correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
   }
   var trapTarget = state.round.targets.filter(function(t){ return t.trap; })[0];
-  return { key:key, label:LABELS[key], correctLabel:trapTarget.label, correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
+  return { key:key, label:LABELS[key], correctLabel:OUT_OF_TARGET_LABEL, correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
 }
 
 function pickNextKey(){
@@ -717,14 +761,21 @@ function spawnCard(){
   state.locked = false;
   var key = pickNextKey();
   var card = resolveCardMeta(key);
+  var asset = ASSETS[key] || { img:null };
   state.currentCard = card;
 
   meatCard.innerHTML = "";
+  meatCard.classList.toggle("has-image", !!asset.img);
   meatCard.appendChild(buildVisual(key));
-  var label = document.createElement("div");
-  label.className = "card-label";
-  label.textContent = card.label;
-  meatCard.appendChild(label);
+
+  // 画像がある部位はクイズ性を保つため、カード上に部位名を表示しない。
+  // 店長など画像がないカードのみ、識別用の文字を表示する。
+  if(!asset.img){
+    var label = document.createElement("div");
+    label.className = "card-label";
+    label.textContent = card.label;
+    meatCard.appendChild(label);
+  }
 
   meatCard.style.transition = "none";
   meatCard.style.opacity = "1";
@@ -734,6 +785,13 @@ function spawnCard(){
 
 function updateScoreDisplay(){
   hudScore.textContent = "SCORE " + state.score;
+}
+
+function showCorrectFeedback(){
+  if(!correctOverlay) return;
+  correctOverlay.classList.remove("active");
+  void correctOverlay.offsetWidth;
+  correctOverlay.classList.add("active");
 }
 
 function startGame(){
@@ -882,6 +940,7 @@ function handleResolution(corner, plateEl){
   if(correct){
     state.score++;
     updateScoreDisplay();
+    showCorrectFeedback();
     beep(880,0.09,"triangle");
     vibrate(20);
     plateEl.classList.add("bounce");
@@ -915,8 +974,8 @@ function showMissFeedback(card){
     bigEl.textContent = "それ人間！！";
     smallEl.textContent = "店長は仕入れ先じゃありません";
   } else if(kind === "dummy"){
-    bigEl.textContent = "そんな部位、無い！！";
-    smallEl.textContent = "適当な名前に騙されるな";
+    bigEl.textContent = "今回は対象外！！";
+    smallEl.textContent = "表示されている皿にない部位です";
   } else {
     bigEl.textContent = "ちがう皿！！";
     smallEl.textContent = "お皿を間違えました";
@@ -925,7 +984,8 @@ function showMissFeedback(card){
   var correctPlateEl = null;
   if(card && card.correctCorner){
     var dir = CORNER_DIR_LABELS[card.correctCorner] || card.correctCorner;
-    answerEl.textContent = "正解は" + dir + "の『" + card.correctLabel + "』でした";
+    var cardName = card.label ? "これは『" + card.label + "』です。 " : "";
+    answerEl.textContent = cardName + "正解は" + dir + "の『" + card.correctLabel + "』でした";
     correctPlateEl = getPlateEl(card.correctCorner);
     if(correctPlateEl) correctPlateEl.classList.add("hint");
   } else {
@@ -976,15 +1036,16 @@ var TRIVIA = [
   "赤身は低脂肪・高タンパク。さっぱりした甘みで生姜醤油と好相性。",
   "タテガミは首の下にある白い脂身。コリコリ食感で、赤身と一緒に食べると最強コンビ。",
   "フタエゴはあばら周りの希少部位。脂の甘みが濃厚で、部位の中でも特に貴重。",
+  "ハツは歯切れのよい食感が特徴。炙ると香ばしさが増して酒のつまみに強い。",
+  "タンはしっかりした食感と旨みが特徴。炙りで香りが立つ人気部位。",
+  "カルビは脂の甘みを楽しめる部位。赤身とは違う濃厚さが魅力。",
+  "霜降りは脂の入り方が美しい人気部位。口どけの良さが魅力。",
   "馬肉が「桜肉」と呼ばれるのは、切った時の断面が桜色をしているから。",
   "衛生管理された馬刺し用の馬肉は、生食文化のある数少ない肉のひとつ。新鮮さと管理が大事。",
   "馬肉は牛肉・豚肉に比べて低カロリー・低脂質なのに鉄分は豊富。ヘルシー志向のお客さんにもおすすめ。",
   "馬肉は栄養価の高さから「薬食い」とも呼ばれ、古くから滋養強壮の食材とされてきた。",
   "店長は部位ではありません。お会計はしっかりお願いします。",
-  "コウネは首元の柔らかい脂身。とろけるような食感で馬肉通に人気の部位。",
-  "レバーは鉄分たっぷり。新鮮な馬レバ刺しは臭みが少なくねっとり濃厚。",
-  "ヒレは一頭からわずかしか取れない超希少部位。上品な赤身の旨みが凝縮。",
-  "「尻尾トロ」や「ヒヅメステーキ」は実在しません。当店のメニューにもないのでご注意を。"
+  "Lv.2では、皿に表示されていない部位は対象外。画像だけで見分けられたらかなりの馬肉通。"
 ];
 function getTaunt(){
   var score = state.score;
