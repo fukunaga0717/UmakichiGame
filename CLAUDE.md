@@ -4,12 +4,12 @@
 
 ## ファイル構成
 
-- `index.html` — 画面のHTML構造 + `<link>` でCSSを読み込み + 本体JS（`<script>` 内、単一のIIFEでラップ）
+- `index.html` — 画面のHTML構造 + `<link>` でCSSを読み込み + `<script src="js/data.js">` → 本体JS（`<script>` 内、単一のIIFEでラップ）の順で読み込み
 - `css/style.css` — 見た目・レイアウト・アニメーションのCSS全体
+- `js/data.js` — データ定数（ASSETS/LABELS/LEARN_ORDER/LEARN_DATA/CORNER_DIR_LABELS/OUT_OF_TARGET_LABEL/LEVELS/PLACEHOLDER_URL/TRIVIA）。IIFEで包まずトップレベル `var` で宣言（＝グローバル）。index.html本体スクリプトより**先に**読み込まれる必要がある
 - `images/` — 部位写真・部位図など（コード内で `images/xxx.png` の相対パスで参照）
-- `js/`（将来分離予定。現時点ではまだ存在しない） — データ定数やゲーム本体JSをこの下に分離していく計画
 
-現状、JSはまだ index.html に残っている。データ定数（ASSETS/LABELS/LEARN_ORDER/LEARN_DATA/CORNER_DIR_LABELS/OUT_OF_TARGET_LABEL/LEVELS/TRIVIA など）とゲーム本体ロジックが密結合しているため、分離は段階的に行う方針。
+ゲーム本体ロジック（画面遷移・タイマー・フリック判定・スコア・結果表示・学習パネル等）は現状まだ index.html 内のIIFEに残っている。state共有で密結合しているため、これ以上の分割（js/game.js 等）は必要になった時点で改めて設計してから進める。
 
 ## 最重要ルール: 最小diffを徹底する
 
