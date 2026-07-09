@@ -261,16 +261,19 @@ function goCountdown(){
   showScreen("countdown");
   var n = 3;
   var el = document.getElementById("countdown-num");
+  el.classList.remove("start-text");
   el.textContent = n;
   el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
   beep(440,0.12,"square");
   var timer = setInterval(function(){
     n--;
     if(n > 0){
+      el.classList.remove("start-text");
       el.textContent = n;
       el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
       beep(440,0.12,"square");
     } else if(n === 0){
+      el.classList.add("start-text");
       el.textContent = "スタート！";
       el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
       beep(880,0.2,"triangle");
