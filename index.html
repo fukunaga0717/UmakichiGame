@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#141110">
+<title>馬肉仕分け★クソゲー | ウマキチ都立家政店</title>
+<style>
+/* =========================================================
+   画像の差し替え方法（お店の方向け）
+   images/akami.png    … 赤身の写真
+   images/tategami.png … タテガミの写真
+   images/futagoe.png  … フタゴエの写真
+   images/tencho.png   … 店長の写真
+   上記ファイル名で index.html と同じ階層の "images" フォルダに
+   画像を置くだけで、絵文字から自動的に写真表示に切り替わります。
+   （画像が無い場合は今まで通り絵文字が表示されます）
+   ========================================================= */
+
+:root{
+  --bg:#151210;
+  --panel:#221c18;
+  --panel-2:#2b231d;
+  --red:#d6362a;
+  --red-dark:#9c2721;
+  --gold:#e8b84b;
+  --gold-2:#f3d488;
+  --cream:#f7ecd8;
+  --ink:#1c1512;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  overflow:hidden; position:fixed; inset:0;
+  background:var(--bg);
+  color:var(--cream);
+  font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',system-ui,sans-serif;
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+  overscroll-behavior:none;
+}
+
+#app{
+  width:100%;
+  height:100vh;
+  height:100dvh;
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 22px),
+    radial-gradient(ellipse at top, #2a221c 0%, #141110 70%);
+  position:relative;
+  display:flex; flex-direction:column;
+}
+
+.screen{
+  display:none;
+  flex-direction:column;
+  width:100%; height:100%;
+  padding-top:calc(var(--safe-t) + 10px);
+  padding-bottom:calc(var(--safe-b) + 10px);
+}
+.screen.active{display:flex;}
+
+/* ---------- 共通パーツ ---------- */
+.izaka-title{
+  font-weight:900;
+  letter-spacing:.08em;
+  text-shadow:0 2px 0 #000, 0 0 14px rgba(232,184,75,.35);
+}
+.badge-tag{
+  display:inline-block;
+  background:var(--red);
+  color:#fff;
+  font-weight:900;
+  font-size:12px;
+  padding:4px 10px;
+  border-radius:3px;
+  transform:rotate(-3deg);
+  box-shadow:0 3px 0 rgba(0,0,0,.35);
+}
+button{font-family:inherit;}
+.btn{
+  border:none;
+  border-radius:12px;
+  font-weight:900;
+  cursor:pointer;
+  padding:14px 20px;
+  font-size:17px;
+  letter-spacing:.04em;
+  box-shadow:0 5px 0 rgba(0,0,0,.4);
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+.btn:active{transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.4);}
+.btn-primary{background:linear-gradient(180deg,var(--red),var(--red-dark)); color:#fff;}
+.btn-gold{background:linear-gradient(180deg,var(--gold-2),var(--gold)); color:#3a2a0a;}
+.btn-ghost{background:transparent; color:var(--gold-2); box-shadow:none; text-decoration:underline; font-size:14px; font-weight:700; padding:8px;}
+
+/* ---------- スタート画面 ---------- */
+#screen-start{align-items:center; justify-content:flex-start; padding:24px 20px; gap:18px; overflow-y:auto;}
+.start-header{text-align:center; margin-top:6px;}
+.start-header .badge-tag{margin-bottom:10px;}
+.start-header h1{
+  font-size:clamp(28px,9vw,40px);
+  margin:6px 0 0;
+  color:var(--gold-2);
+  line-height:1.25;
+}
+.start-header h1 small{display:block; font-size:.45em; color:var(--cream); font-weight:700; margin-top:4px;}
+.start-sub{
+  font-size:13px; color:#cbb9a0; text-align:center; line-height:1.7;
+  background:var(--panel); border:1px dashed var(--gold); border-radius:10px; padding:12px 14px; max-width:340px;
+}
+.level-select{display:flex; flex-direction:column; gap:12px; width:100%; max-width:340px;}
+.level-btn{
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--panel-2); border:2px solid var(--gold); border-radius:14px;
+  padding:14px 18px; color:var(--cream); text-align:left;
+}
+.level-btn .level-num{font-size:20px; font-weight:900; color:var(--gold-2);}
+.level-btn .level-name{font-size:13px; font-weight:700; color:#e6dcc9;}
+.level-btn[disabled]{
+  opacity:.4; border-color:#665; filter:grayscale(60%);
+}
+.level-btn.active{border-color:var(--red); box-shadow:0 0 0 3px rgba(214,54,42,.35);}
+#start-btn{width:100%; max-width:340px; margin-top:6px; font-size:19px;}
+
+/* ---------- カウントダウン ---------- */
+#screen-countdown{align-items:center; justify-content:center;}
+#countdown-num{
+  font-size:min(38vw,220px); font-weight:900; color:var(--gold-2);
+  text-shadow:0 4px 0 #000;
+  animation:popIn .5s ease;
+}
+@keyframes popIn{0%{transform:scale(.3); opacity:0;}60%{transform:scale(1.15); opacity:1;}100%{transform:scale(1);}}
+
+/* ---------- ゲーム画面 ---------- */
+#screen-game{position:relative; padding:8px; gap:0;}
+#hud{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:4px 10px 8px;
+}
+#hud-timer-wrap{flex:1; text-align:center;}
+#hud-timer{
+  font-size:clamp(40px,14vw,64px); font-weight:900; color:var(--gold-2);
+  text-shadow:0 3px 0 #000;
+  font-variant-numeric:tabular-nums;
+  transition:color .2s;
+}
+#hud-timer.low{color:#ff5b4d; animation:pulse .5s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+#hud-score{
+  position:absolute; top:calc(var(--safe-t) + 10px); right:14px;
+  background:var(--red); padding:6px 12px; border-radius:20px; font-weight:900; font-size:14px;
+  box-shadow:0 3px 0 rgba(0,0,0,.4);
+}
+
+#game-area{
+  position:relative;
+  flex:1;
+  margin:6px;
+  border-radius:16px;
+  background:radial-gradient(ellipse at center, #241d18 0%, #171310 80%);
+  border:2px solid #3a2f26;
+  touch-action:none;
+  overflow:hidden;
+}
+
+.plate{
+  position:absolute;
+  width:clamp(76px,23vw,112px);
+  height:clamp(76px,23vw,112px);
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fffdf6, #e9ddc4 70%, #cbb98f 100%);
+  border:5px solid var(--gold);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow:0 6px 14px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.4);
+}
+.plate[data-corner="TL"]{top:10px; left:10px;}
+.plate[data-corner="TR"]{top:10px; right:10px;}
+.plate[data-corner="BL"]{bottom:10px; left:10px;}
+.plate[data-corner="BR"]{bottom:10px; right:10px;}
+.plate.trap{border-color:#8a8a8a; background:radial-gradient(circle at 35% 30%, #fdfdfd, #d8d8d8 70%, #b3b3b3 100%);}
+.plate .visual{width:clamp(30px,9vw,46px); height:clamp(30px,9vw,46px);}
+.plate .visual-emoji{font-size:clamp(24px,8vw,40px); line-height:1;}
+.plate-label{
+  margin-top:2px; font-size:clamp(10px,3vw,13px); font-weight:900; color:var(--ink);
+  white-space:nowrap;
+}
+@keyframes plateBounce{0%{transform:scale(1);}30%{transform:scale(1.18);}60%{transform:scale(.94);}100%{transform:scale(1);}}
+.plate.bounce{animation:plateBounce .4s ease;}
+
+#card-layer{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;}
+.meat-card{
+  pointer-events:auto;
+  width:clamp(118px,32vw,168px);
+  height:clamp(148px,38vw,196px);
+  background:linear-gradient(180deg,#fffaf0,var(--cream));
+  border:4px solid var(--red);
+  border-radius:14px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  box-shadow:0 10px 22px rgba(0,0,0,.55);
+  touch-action:none;
+  will-change:transform;
+  padding:10px;
+}
+.meat-card .visual{width:clamp(48px,14vw,72px); height:clamp(48px,14vw,72px); display:flex; align-items:center; justify-content:center;}
+.meat-card .visual-emoji{font-size:clamp(38px,12vw,60px); line-height:1;}
+.meat-card .visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px;}
+.card-label{font-size:clamp(18px,6vw,26px); font-weight:900; color:var(--ink); text-align:center;}
+
+#flash-overlay{
+  position:absolute; inset:0; background:#ff2b20; opacity:0; pointer-events:none; z-index:25;
+}
+#flash-overlay.active{animation:flashPulse .5s ease;}
+@keyframes flashPulse{0%{opacity:0;}20%{opacity:.75;}100%{opacity:0;}}
+
+#gameover-overlay{
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  z-index:30; background:rgba(10,6,4,.55); padding:20px;
+}
+#gameover-overlay.active{display:flex;}
+.gameover-box{
+  background:var(--ink); border:4px solid var(--red); border-radius:16px;
+  padding:26px 22px; text-align:center; animation:popIn .35s ease;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+.gameover-box .big{font-size:clamp(24px,8vw,36px); font-weight:900; color:#ff6a5c; line-height:1.3;}
+.gameover-box .small{margin-top:8px; font-size:13px; color:#e6dcc9;}
+
+/* ---------- 結果画面 ---------- */
+#screen-result{align-items:center; justify-content:flex-start; padding:24px 20px; gap:14px; overflow-y:auto;}
+.result-panel{
+  background:var(--panel); border:2px dashed var(--gold); border-radius:16px;
+  padding:20px; text-align:center; width:100%; max-width:360px;
+}
+.result-panel .label{font-size:13px; color:#cbb9a0; font-weight:700;}
+.result-panel .score{font-size:clamp(48px,16vw,72px); font-weight:900; color:var(--gold-2); text-shadow:0 3px 0 #000;}
+.result-panel .taunt{margin-top:8px; font-size:15px; font-weight:700; line-height:1.6; color:var(--cream);}
+.result-actions{display:flex; flex-direction:column; gap:12px; width:100%; max-width:360px;}
+.share-row{display:flex; gap:10px;}
+.share-row .btn{flex:1; font-size:14px; padding:12px 8px;}
+
+/* ---------- 店員確認画面 ---------- */
+#screen-staff{align-items:center; justify-content:center; padding:24px 20px; gap:16px; text-align:center;}
+.staff-panel{
+  background:var(--panel); border:3px solid var(--gold); border-radius:18px;
+  padding:26px 22px; width:100%; max-width:360px;
+}
+.staff-panel h2{margin:0 0 6px; font-size:18px; color:var(--gold-2);}
+.staff-score{font-size:clamp(36px,12vw,54px); font-weight:900; color:var(--cream); margin:6px 0 14px;}
+.staff-timer-label{font-size:12px; color:#cbb9a0;}
+.staff-timer{
+  font-size:clamp(34px,11vw,50px); font-weight:900; color:#ff8a5c;
+  font-variant-numeric:tabular-nums; margin:4px 0 18px;
+}
+.staff-confirmed-badge{
+  display:none; margin-top:14px; color:var(--red); border:4px solid var(--red);
+  border-radius:10px; padding:8px 16px; font-weight:900; font-size:20px;
+  transform:rotate(-8deg); width:fit-content; margin-left:auto; margin-right:auto;
+}
+.staff-confirmed-badge.show{display:block;}
+
+/* ---------- 縦画面誘導 ---------- */
+#rotate-overlay{
+  display:none; position:fixed; inset:0; z-index:999; background:#000;
+  color:#fff; align-items:center; justify-content:center; text-align:center; font-size:20px; padding:20px;
+}
+@media (orientation:landscape) and (max-height:500px){
+  #rotate-overlay{display:flex;}
+  #app{display:none;}
+}
+
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- スタート画面 -->
+  <section id="screen-start" class="screen active">
+    <div class="start-header">
+      <span class="badge-tag">酔っ払い注意</span>
+      <h1 class="izaka-title">馬肉仕分け<br>★クソゲー★<small>ウマキチ都立家政店</small></h1>
+    </div>
+    <p class="start-sub">中央に出てくる肉カードを、正しいお皿めがけて指でフリック！<br>間違えたら即終了…店長は食べちゃダメだぞ🧑‍🍳</p>
+
+    <div class="level-select">
+      <button type="button" class="level-btn active" data-level="1">
+        <span class="level-num">Lv.1</span>
+        <span class="level-name">30秒タイムアタック</span>
+      </button>
+      <button type="button" class="level-btn" data-level="2" disabled>
+        <span class="level-num">Lv.2</span>
+        <span class="level-name">準備中…</span>
+      </button>
+      <button type="button" class="level-btn" data-level="3" disabled>
+        <span class="level-num">Lv.3</span>
+        <span class="level-name">準備中…</span>
+      </button>
+    </div>
+
+    <button type="button" id="start-btn" class="btn btn-primary">ゲーム開始</button>
+  </section>
+
+  <!-- カウントダウン -->
+  <section id="screen-countdown" class="screen">
+    <div id="countdown-num">3</div>
+  </section>
+
+  <!-- ゲーム画面 -->
+  <section id="screen-game" class="screen">
+    <div id="hud">
+      <div id="hud-timer-wrap"><div id="hud-timer">30</div></div>
+    </div>
+    <div id="hud-score">SCORE 0</div>
+
+    <div id="game-area">
+      <!-- 皿は JS が動的に生成 -->
+      <div id="card-layer">
+        <div id="meat-card" class="meat-card"></div>
+      </div>
+      <div id="flash-overlay"></div>
+      <div id="gameover-overlay">
+        <div class="gameover-box">
+          <div class="big" id="gameover-big">それ人間！！</div>
+          <div class="small" id="gameover-small">店長は仕入れ先じゃありません</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="screen-result" class="screen">
+    <div class="result-panel">
+      <div class="label">RESULT</div>
+      <div class="score" id="result-score">0</div>
+      <div class="taunt" id="result-taunt"></div>
+    </div>
+
+    <div class="result-actions">
+      <button type="button" id="btn-retry" class="btn btn-gold">もう一回挑戦する</button>
+      <button type="button" id="btn-staff" class="btn btn-primary">結果を店員に見せて特典をもらう！</button>
+      <div class="share-row">
+        <button type="button" id="btn-share-x" class="btn btn-gold">Xでシェア</button>
+        <button type="button" id="btn-share-line" class="btn btn-gold">LINEでシェア</button>
+      </div>
+      <button type="button" id="btn-result-home" class="btn btn-ghost">トップに戻る</button>
+    </div>
+  </section>
+
+  <!-- 店員確認画面 -->
+  <section id="screen-staff" class="screen">
+    <div class="staff-panel">
+      <h2>スタッフ確認画面</h2>
+      <div class="staff-score" id="staff-score">0点</div>
+      <div class="staff-timer-label">この画面の有効期限</div>
+      <div class="staff-timer" id="staff-timer">05:00</div>
+      <button type="button" id="btn-staff-confirm" class="btn btn-primary">スタッフ確認ボタン</button>
+      <div class="staff-confirmed-badge" id="staff-confirmed-badge">確認済み✓</div>
+    </div>
+    <button type="button" id="btn-staff-home" class="btn btn-ghost">トップに戻る</button>
+  </section>
+
+</div>
+
+<div id="rotate-overlay">📱<br>スマホを縦向きにしてください</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- データ定義 ---------------- */
+var ASSETS = {
+  akami:    { emoji:"🥩", img:"images/akami.png" },
+  tategami: { emoji:"🤍", img:"images/tategami.png" },
+  futagoe:  { emoji:"🥓", img:"images/futagoe.png" },
+  tencho:   { emoji:"🧑‍🍳", img:"images/tencho.png" }
+};
+
+var LEVELS = [
+  {
+    id:1,
+    timeMs:30000,
+    targets:[
+      { key:"akami",    label:"赤身",     corner:"TL", trap:false },
+      { key:"tategami", label:"タテガミ", corner:"TR", trap:false },
+      { key:"futagoe",  label:"フタゴエ", corner:"BL", trap:false },
+      { key:"tencho",   label:"店長",     corner:"BR", trap:true  }
+    ],
+    // 出題の重み(店長は出現率低め・トラップ)
+    weightedKeys:["akami","akami","akami","tategami","tategami","tategami","futagoe","futagoe","futagoe","tencho"]
+  }
+];
+
+var PLACEHOLDER_URL = "https://example.com/umakichi-game"; // TODO: 実際の公開URLに差し替えてください
+
+/* ---------------- 状態 ---------------- */
+var state = {
+  level: LEVELS[0],
+  score: 0,
+  currentCard: null,
+  lastKey: null,
+  lastKey2: null,
+  dragging: false,
+  locked: false, // アニメ中の操作ロック
+  startX:0, startY:0, curX:0, curY:0, dragStartTime:0,
+  timerRafId: null,
+  gameStartTs: 0,
+  gameOverReason: null, // 'timeup' | 'wrong'
+  gameOverSpecial: false,
+  staffIntervalId: null,
+  audioCtx: null
+};
+
+/* ---------------- 画面切替 ---------------- */
+var screens = {};
+["start","countdown","game","result","staff"].forEach(function(name){
+  screens[name] = document.getElementById("screen-"+name);
+});
+function showScreen(name){
+  Object.keys(screens).forEach(function(k){
+    screens[k].classList.toggle("active", k===name);
+  });
+}
+
+/* ---------------- 音・振動 ---------------- */
+function unlockAudio(){
+  if(!state.audioCtx){
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      state.audioCtx = new AC();
+    }catch(e){ state.audioCtx = null; }
+  }
+}
+function beep(freq, dur, type){
+  if(!state.audioCtx) return;
+  try{
+    var ctx = state.audioCtx;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || "square";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.06;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    osc.stop(ctx.currentTime + dur);
+  }catch(e){}
+}
+function vibrate(pattern){
+  if(navigator.vibrate){ navigator.vibrate(pattern); }
+}
+
+/* ---------------- ビジュアル生成(絵文字/画像フォールバック) ---------------- */
+function buildVisual(key){
+  var asset = ASSETS[key];
+  var wrap = document.createElement("div");
+  wrap.className = "visual";
+
+  var emoji = document.createElement("div");
+  emoji.className = "visual-emoji";
+  emoji.textContent = asset.emoji;
+
+  var img = document.createElement("img");
+  img.className = "visual-img";
+  img.style.display = "none";
+  img.alt = "";
+  img.draggable = false;
+  img.addEventListener("load", function(){
+    img.style.display = "block";
+    emoji.style.display = "none";
+  });
+  img.src = asset.img;
+
+  wrap.appendChild(emoji);
+  wrap.appendChild(img);
+  return wrap;
+}
+
+/* ---------------- レベル選択(スタート画面) ---------------- */
+var levelButtons = document.querySelectorAll(".level-btn");
+levelButtons.forEach(function(btn){
+  btn.addEventListener("click", function(){
+    if(btn.disabled) return;
+    levelButtons.forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+  });
+});
+
+document.getElementById("start-btn").addEventListener("click", function(){
+  unlockAudio();
+  beep(660,0.08,"triangle");
+  goCountdown();
+});
+
+/* ---------------- カウントダウン ---------------- */
+function goCountdown(){
+  showScreen("countdown");
+  var n = 3;
+  var el = document.getElementById("countdown-num");
+  el.textContent = n;
+  el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+  beep(440,0.12,"square");
+  var timer = setInterval(function(){
+    n--;
+    if(n > 0){
+      el.textContent = n;
+      el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+      beep(440,0.12,"square");
+    } else if(n === 0){
+      el.textContent = "スタート！";
+      el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+      beep(880,0.2,"triangle");
+    } else {
+      clearInterval(timer);
+      startGame();
+    }
+  }, 700);
+}
+
+/* ---------------- ゲーム本体 ---------------- */
+var gameArea = document.getElementById("game-area");
+var cardLayer = document.getElementById("card-layer");
+var meatCard = document.getElementById("meat-card");
+var hudTimer = document.getElementById("hud-timer");
+var hudScore = document.getElementById("hud-score");
+var flashOverlay = document.getElementById("flash-overlay");
+var gameoverOverlay = document.getElementById("gameover-overlay");
+
+function buildPlates(){
+  // 既存の皿を除去して作り直す(レベル拡張を見据えデータ駆動)
+  var old = gameArea.querySelectorAll(".plate");
+  old.forEach(function(p){ p.remove(); });
+
+  state.level.targets.forEach(function(t){
+    var plate = document.createElement("div");
+    plate.className = "plate" + (t.trap ? " trap" : "");
+    plate.dataset.corner = t.corner;
+    plate.dataset.key = t.key;
+
+    plate.appendChild(buildVisual(t.key));
+
+    var label = document.createElement("div");
+    label.className = "plate-label";
+    label.textContent = t.label;
+    plate.appendChild(label);
+
+    gameArea.appendChild(plate);
+  });
+}
+
+function getPlateEl(corner){
+  return gameArea.querySelector('.plate[data-corner="'+corner+'"]');
+}
+function getTargetByCorner(corner){
+  return state.level.targets.filter(function(t){ return t.corner === corner; })[0];
+}
+function getTargetByKey(key){
+  return state.level.targets.filter(function(t){ return t.key === key; })[0];
+}
+
+function pickNextKey(){
+  var pool = state.level.weightedKeys;
+  var key;
+  var tries = 0;
+  do{
+    key = pool[Math.floor(Math.random()*pool.length)];
+    tries++;
+  } while(key === state.lastKey && key === state.lastKey2 && tries < 12);
+  state.lastKey2 = state.lastKey;
+  state.lastKey = key;
+  return key;
+}
+
+function spawnCard(){
+  state.locked = false;
+  var key = pickNextKey();
+  var target = getTargetByKey(key);
+  state.currentCard = target;
+
+  meatCard.innerHTML = "";
+  meatCard.appendChild(buildVisual(key));
+  var label = document.createElement("div");
+  label.className = "card-label";
+  label.textContent = target.label;
+  meatCard.appendChild(label);
+
+  meatCard.style.transition = "none";
+  meatCard.style.opacity = "1";
+  meatCard.style.transform = "translate(0px,0px) rotate(0deg) scale(1)";
+  void meatCard.offsetWidth;
+}
+
+function updateScoreDisplay(){
+  hudScore.textContent = "SCORE " + state.score;
+}
+
+function startGame(){
+  state.score = 0;
+  state.lastKey = null;
+  state.lastKey2 = null;
+  state.locked = false;
+  state.gameOverReason = null;
+  state.gameOverSpecial = false;
+  updateScoreDisplay();
+  gameoverOverlay.classList.remove("active");
+  buildPlates();
+  spawnCard();
+  showScreen("game");
+
+  state.gameStartTs = performance.now();
+  hudTimer.classList.remove("low");
+  tickTimer();
+}
+
+function tickTimer(){
+  var elapsed = performance.now() - state.gameStartTs;
+  var remain = state.level.timeMs - elapsed;
+  if(remain <= 0){
+    hudTimer.textContent = "0";
+    endGame("timeup");
+    return;
+  }
+  var sec = Math.ceil(remain/1000);
+  hudTimer.textContent = sec;
+  hudTimer.classList.toggle("low", remain <= 5000);
+  state.timerRafId = requestAnimationFrame(tickTimer);
+}
+function stopTimer(){
+  if(state.timerRafId){
+    cancelAnimationFrame(state.timerRafId);
+    state.timerRafId = null;
+  }
+}
+
+/* ---------- ドラッグ／フリック処理 ---------- */
+var MIN_DIST = 46;
+var MIN_VELOCITY = 0.22; // px/ms
+var BIG_DIST = 130;
+var MAX_ROT = 18;
+
+function pointFromEvent(e){
+  if(e.touches && e.touches.length){
+    return { x:e.touches[0].clientX, y:e.touches[0].clientY };
+  }
+  if(e.changedTouches && e.changedTouches.length){
+    return { x:e.changedTouches[0].clientX, y:e.changedTouches[0].clientY };
+  }
+  return { x:e.clientX, y:e.clientY };
+}
+
+function onDragStart(e){
+  if(state.locked) return;
+  var p = pointFromEvent(e);
+  state.dragging = true;
+  state.startX = p.x; state.startY = p.y;
+  state.curX = p.x; state.curY = p.y;
+  state.dragStartTime = performance.now();
+  meatCard.style.transition = "none";
+}
+function onDragMove(e){
+  if(!state.dragging) return;
+  if(e.cancelable) e.preventDefault();
+  var p = pointFromEvent(e);
+  state.curX = p.x; state.curY = p.y;
+  var dx = state.curX - state.startX;
+  var dy = state.curY - state.startY;
+  var rot = Math.max(-MAX_ROT, Math.min(MAX_ROT, dx * 0.06));
+  meatCard.style.transform = "translate("+dx+"px,"+dy+"px) rotate("+rot+"deg) scale(1)";
+}
+function onDragEnd(e){
+  if(!state.dragging) return;
+  state.dragging = false;
+  var dx = state.curX - state.startX;
+  var dy = state.curY - state.startY;
+  var dist = Math.hypot(dx,dy);
+  var duration = Math.max(1, performance.now() - state.dragStartTime);
+  var velocity = dist / duration;
+
+  var isFlick = dist >= BIG_DIST || (dist >= MIN_DIST && velocity >= MIN_VELOCITY);
+
+  if(!isFlick){
+    springBack();
+    return;
+  }
+  var corner = detectCorner(dx,dy);
+  resolveFlick(corner, dx, dy);
+}
+function detectCorner(dx,dy){
+  if(dx < 0 && dy < 0) return "TL";
+  if(dx >= 0 && dy < 0) return "TR";
+  if(dx < 0 && dy >= 0) return "BL";
+  return "BR";
+}
+function springBack(){
+  meatCard.style.transition = "transform .28s cubic-bezier(.34,1.56,.64,1)";
+  meatCard.style.transform = "translate(0px,0px) rotate(0deg) scale(1)";
+}
+
+function resolveFlick(corner, dx, dy){
+  state.locked = true;
+  var plateEl = getPlateEl(corner);
+  var cardRect = meatCard.getBoundingClientRect();
+  var plateRect = plateEl.getBoundingClientRect();
+  var cardCX = cardRect.left + cardRect.width/2;
+  var cardCY = cardRect.top + cardRect.height/2;
+  var plateCX = plateRect.left + plateRect.width/2;
+  var plateCY = plateRect.top + plateRect.height/2;
+  var moveX = dx + (plateCX - cardCX);
+  var moveY = dy + (plateCY - cardCY);
+  var rot = Math.max(-MAX_ROT, Math.min(MAX_ROT, dx * 0.06));
+
+  function onEnd(){
+    meatCard.removeEventListener("transitionend", onEnd);
+    handleResolution(corner, plateEl);
+  }
+  meatCard.addEventListener("transitionend", onEnd);
+  meatCard.style.transition = "transform .22s ease-in";
+  meatCard.style.transform = "translate("+moveX+"px,"+moveY+"px) rotate("+rot+"deg) scale(.3)";
+}
+
+function handleResolution(corner, plateEl){
+  var target = getTargetByCorner(corner);
+  var correct = target && state.currentCard && target.key === state.currentCard.key;
+
+  if(correct){
+    state.score++;
+    updateScoreDisplay();
+    beep(880,0.09,"triangle");
+    vibrate(20);
+    plateEl.classList.add("bounce");
+    setTimeout(function(){ plateEl.classList.remove("bounce"); }, 420);
+    spawnCard();
+  } else {
+    triggerGameOver(state.currentCard && state.currentCard.key === "tencho");
+  }
+}
+
+function triggerGameOver(special){
+  stopTimer();
+  state.gameOverReason = "wrong";
+  state.gameOverSpecial = !!special;
+  beep(140,0.35,"sawtooth");
+  vibrate([100,50,100]);
+  gameArea.classList.add("shake");
+  flashOverlay.classList.remove("active"); void flashOverlay.offsetWidth; flashOverlay.classList.add("active");
+
+  var bigEl = document.getElementById("gameover-big");
+  var smallEl = document.getElementById("gameover-small");
+  if(special){
+    bigEl.textContent = "それ人間！！";
+    smallEl.textContent = "店長は仕入れ先じゃありません";
+  } else {
+    bigEl.textContent = "しくじった…！";
+    smallEl.textContent = "お皿を間違えました";
+  }
+  gameoverOverlay.classList.add("active");
+
+  setTimeout(function(){
+    gameArea.classList.remove("shake");
+    showResult();
+  }, 1400);
+}
+
+function endGame(reason){
+  stopTimer();
+  state.gameOverReason = reason;
+  state.gameOverSpecial = false;
+  showResult();
+}
+
+/* ---------- ドラッグイベント登録(タッチ優先 + マウスはフォールバック) ---------- */
+meatCard.addEventListener("touchstart", onDragStart, {passive:true});
+meatCard.addEventListener("touchmove", onDragMove, {passive:false});
+meatCard.addEventListener("touchend", onDragEnd, {passive:true});
+meatCard.addEventListener("touchcancel", onDragEnd, {passive:true});
+
+meatCard.addEventListener("mousedown", function(e){
+  onDragStart(e);
+  function mm(ev){ onDragMove(ev); }
+  function mu(ev){
+    onDragEnd(ev);
+    window.removeEventListener("mousemove", mm);
+    window.removeEventListener("mouseup", mu);
+  }
+  window.addEventListener("mousemove", mm);
+  window.addEventListener("mouseup", mu);
+});
+
+gameArea.addEventListener("touchmove", function(e){
+  if(state.dragging && e.cancelable) e.preventDefault();
+}, {passive:false});
+
+/* ---------------- 結果画面 ---------------- */
+function getTaunt(){
+  var score = state.score;
+  if(state.gameOverReason === "wrong"){
+    if(state.gameOverSpecial){
+      return "店長を肉と間違えるとは…人間やめるレベルの珍プレー。";
+    }
+    return "スコア"+score+"点で終了…お肉、まだまだ覚える気ありますか？";
+  }
+  if(score <= 0) return "開店休業レベル。まずは赤身から覚えよう。";
+  if(score <= 4) return "バイト初日レベル。奥はまだ広いぞ。";
+  if(score <= 9) return "見習い卒業目前！その調子。";
+  if(score <= 14) return "なかなかやるな、常連の風格。";
+  if(score <= 19) return "馬肉ソムリエ候補、店長も驚愕。";
+  return "もはや店長超え！？伝説の仕分け人現る。";
+}
+
+function showResult(){
+  document.getElementById("result-score").textContent = state.score;
+  document.getElementById("result-taunt").textContent = getTaunt();
+  showScreen("result");
+}
+
+document.getElementById("btn-retry").addEventListener("click", function(){
+  goCountdown();
+});
+document.getElementById("btn-result-home").addEventListener("click", function(){
+  showScreen("start");
+});
+
+/* ---------------- シェア ---------------- */
+function buildShareText(){
+  var taunt = getTaunt();
+  return "【ウマキチ都立家政店】馬肉仕分けクソゲーで"+state.score+"点獲得！"+taunt+" 挑戦はこちら→";
+}
+document.getElementById("btn-share-x").addEventListener("click", function(){
+  var text = buildShareText();
+  var url = "https://twitter.com/intent/tweet?text="+encodeURIComponent(text)
+    + "&url=" + encodeURIComponent(PLACEHOLDER_URL)
+    + "&hashtags=" + encodeURIComponent("ウマキチ都立家政店,馬肉仕分けクソゲー");
+  window.open(url, "_blank");
+});
+document.getElementById("btn-share-line").addEventListener("click", function(){
+  var text = buildShareText();
+  var url = "https://social-plugins.line.me/lineit/share?url="
+    + encodeURIComponent(PLACEHOLDER_URL) + "&text=" + encodeURIComponent(text);
+  window.open(url, "_blank");
+});
+
+/* ---------------- 店員確認画面 ---------------- */
+var STAFF_LIMIT_MS = 5*60*1000;
+function stopStaffTimer(){
+  if(state.staffIntervalId){
+    clearInterval(state.staffIntervalId);
+    state.staffIntervalId = null;
+  }
+}
+function goStaffScreen(){
+  document.getElementById("staff-score").textContent = state.score + "点";
+  document.getElementById("staff-confirmed-badge").classList.remove("show");
+  var confirmBtn = document.getElementById("btn-staff-confirm");
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = "スタッフ確認ボタン";
+
+  var endTime = Date.now() + STAFF_LIMIT_MS;
+  var timerEl = document.getElementById("staff-timer");
+
+  function update(){
+    var remain = endTime - Date.now();
+    if(remain <= 0){
+      timerEl.textContent = "00:00";
+      timerEl.style.color = "#666";
+      stopStaffTimer();
+      return;
+    }
+    var totalSec = Math.ceil(remain/1000);
+    var m = Math.floor(totalSec/60);
+    var s = totalSec % 60;
+    timerEl.textContent = (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+  }
+  stopStaffTimer();
+  update();
+  state.staffIntervalId = setInterval(update, 500);
+
+  showScreen("staff");
+}
+document.getElementById("btn-staff").addEventListener("click", goStaffScreen);
+
+document.getElementById("btn-staff-confirm").addEventListener("click", function(){
+  beep(1046,0.15,"triangle");
+  vibrate(30);
+  document.getElementById("staff-confirmed-badge").classList.add("show");
+  var btn = document.getElementById("btn-staff-confirm");
+  btn.disabled = true;
+  btn.textContent = "確認済みです";
+  stopStaffTimer();
+});
+document.getElementById("btn-staff-home").addEventListener("click", function(){
+  stopStaffTimer();
+  showScreen("start");
+});
+
+/* ---------------- 画面高さ調整(古いSafari向けフォールバック) ---------------- */
+function setAppHeight(){
+  var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.getElementById("app").style.height = h + "px";
+}
+window.addEventListener("resize", setAppHeight);
+setAppHeight();
+
+})();
+</script>
+</body>
+</html>
