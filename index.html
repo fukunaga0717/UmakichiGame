@@ -197,6 +197,8 @@ button{font-family:inherit;}
 }
 @keyframes plateBounce{0%{transform:scale(1);}30%{transform:scale(1.18);}60%{transform:scale(.94);}100%{transform:scale(1);}}
 .plate.bounce{animation:plateBounce .4s ease;}
+@keyframes hintPulse{0%,100%{transform:scale(1); box-shadow:0 0 0 4px var(--gold), 0 0 16px 4px rgba(232,184,75,.85);}50%{transform:scale(1.08); box-shadow:0 0 0 6px var(--gold), 0 0 24px 8px rgba(232,184,75,.95);}}
+.plate.hint{animation:hintPulse .5s ease infinite;}
 
 #card-layer{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;}
 .meat-card{
@@ -235,6 +237,7 @@ button{font-family:inherit;}
 }
 .gameover-box .big{font-size:clamp(24px,8vw,36px); font-weight:900; color:#ff6a5c; line-height:1.3;}
 .gameover-box .small{margin-top:8px; font-size:13px; color:#e6dcc9;}
+.gameover-box .answer{margin-top:12px; font-size:14px; font-weight:900; color:var(--gold-2);}
 
 /* ---------- 結果画面 ---------- */
 #screen-result{align-items:center; justify-content:flex-start; padding:24px 20px; gap:14px; overflow-y:auto;}
@@ -344,6 +347,7 @@ button{font-family:inherit;}
         <div class="gameover-box">
           <div class="big" id="gameover-big">それ人間！！</div>
           <div class="small" id="gameover-small">店長は仕入れ先じゃありません</div>
+          <div class="answer" id="gameover-answer"></div>
         </div>
       </div>
     </div>
@@ -416,6 +420,8 @@ var LABELS = {
   tencho:"店長",
   shippo:"尻尾トロ", hizume:"ヒヅメステーキ", hanasaki:"鼻先スジ", tategami_extra:"たてがみエキストラ"
 };
+
+var CORNER_DIR_LABELS = { TL:"左上", TR:"右上", BL:"左下", BR:"右下" };
 
 var LEVELS = [
   {
@@ -626,7 +632,9 @@ function buildPlates(){
 
     var label = document.createElement("div");
     label.className = "plate-label";
-    label.textContent = t.label;
+    // 店長の皿は正体を隠すため、皿の表示ラベルだけ固定で「ダミー」にする
+    // (中央に出るカード自体の表示名は resolveCardMeta 側で "店長" のまま)
+    label.textContent = t.trap ? "ダミー" : t.label;
     plate.appendChild(label);
 
     gameArea.appendChild(plate);
@@ -642,10 +650,10 @@ function getPlateEl(corner){
 function resolveCardMeta(key){
   var target = state.round.targets.filter(function(t){ return t.key === key; })[0];
   if(target){
-    return { key:key, label:target.label, correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
+    return { key:key, label:target.label, correctLabel:target.label, correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
   }
   var trapTarget = state.round.targets.filter(function(t){ return t.trap; })[0];
-  return { key:key, label:LABELS[key], correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
+  return { key:key, label:LABELS[key], correctLabel:trapTarget.label, correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
 }
 
 function pickNextKey(){
@@ -844,6 +852,7 @@ function showMissFeedback(card){
 
   var bigEl = document.getElementById("gameover-big");
   var smallEl = document.getElementById("gameover-small");
+  var answerEl = document.getElementById("gameover-answer");
   if(kind === "boss"){
     bigEl.textContent = "それ人間！！";
     smallEl.textContent = "店長は仕入れ先じゃありません";
@@ -854,15 +863,27 @@ function showMissFeedback(card){
     bigEl.textContent = "ちがう皿！！";
     smallEl.textContent = "お皿を間違えました";
   }
+
+  var correctPlateEl = null;
+  if(card && card.correctCorner){
+    var dir = CORNER_DIR_LABELS[card.correctCorner] || card.correctCorner;
+    answerEl.textContent = "正解は" + dir + "の『" + card.correctLabel + "』でした";
+    correctPlateEl = getPlateEl(card.correctCorner);
+    if(correctPlateEl) correctPlateEl.classList.add("hint");
+  } else {
+    answerEl.textContent = "";
+  }
+
   gameoverOverlay.classList.add("active");
 
   setTimeout(function(){
     gameArea.classList.remove("shake");
     gameoverOverlay.classList.remove("active");
+    if(correctPlateEl) correctPlateEl.classList.remove("hint");
     if(screens.game.classList.contains("active")){
       spawnCard();
     }
-  }, 800);
+  }, 1100);
 }
 
 function endGame(){
