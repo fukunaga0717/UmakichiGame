@@ -8,10 +8,17 @@
 <style>
 /* =========================================================
    画像の差し替え方法（お店の方向け）
-   images/akami.png    … 赤身の写真
-   images/tategami.png … タテガミの写真
-   images/futagoe.png  … フタゴエの写真
-   images/tencho.png   … 店長の写真
+   images/akami.png            … 赤身の写真
+   images/tategami.png         … タテガミの写真
+   images/futagoe.png          … フタゴエの写真
+   images/tencho.png           … 店長の写真
+   images/koune.png            … コウネの写真（レベル2）
+   images/reba.png             … レバーの写真（レベル2）
+   images/hire.png             … ヒレの写真（レベル2）
+   images/dummy_shippo.png         … ニセ部位「尻尾トロ」用（任意・レベル2）
+   images/dummy_hizume.png         … ニセ部位「ヒヅメステーキ」用（任意）
+   images/dummy_hanasaki.png       … ニセ部位「鼻先スジ」用（任意）
+   images/dummy_tategami_extra.png … ニセ部位「たてがみエキストラ」用（任意）
    上記ファイル名で index.html と同じ階層の "images" フォルダに
    画像を置くだけで、絵文字から自動的に写真表示に切り替わります。
    （画像が無い場合は今まで通り絵文字が表示されます）
@@ -295,16 +302,16 @@ button{font-family:inherit;}
       <span class="badge-tag">酔っ払い注意</span>
       <h1 class="izaka-title">馬肉仕分け<br>★クソゲー★<small>ウマキチ都立家政店</small></h1>
     </div>
-    <p class="start-sub">中央に出てくる肉カードを、正しいお皿めがけて指でフリック！<br>間違えたら即終了…店長は食べちゃダメだぞ🧑‍🍳</p>
+    <p class="start-sub">中央に出てくる肉カードを、正しいお皿めがけて指でフリック！<br>間違えるとペナルティ演出…店長は食べちゃダメだぞ🧑‍🍳</p>
 
     <div class="level-select">
       <button type="button" class="level-btn active" data-level="1">
         <span class="level-num">Lv.1</span>
         <span class="level-name">30秒タイムアタック</span>
       </button>
-      <button type="button" class="level-btn" data-level="2" disabled>
+      <button type="button" class="level-btn" data-level="2">
         <span class="level-num">Lv.2</span>
-        <span class="level-name">準備中…</span>
+        <span class="level-name">ニセ部位まじり</span>
       </button>
       <button type="button" class="level-btn" data-level="3" disabled>
         <span class="level-num">Lv.3</span>
@@ -394,7 +401,20 @@ var ASSETS = {
   akami:    { emoji:"🥩", img:"images/akami.png" },
   tategami: { emoji:"🤍", img:"images/tategami.png" },
   futagoe:  { emoji:"🥓", img:"images/futagoe.png" },
-  tencho:   { emoji:"🧑‍🍳", img:"images/tencho.png" }
+  tencho:   { emoji:"🧑‍🍳", img:"images/tencho.png" },
+  koune:    { emoji:"🍖", img:"images/koune.png" },
+  reba:     { emoji:"🫀", img:"images/reba.png" },
+  hire:     { emoji:"🍗", img:"images/hire.png" },
+  shippo:         { emoji:"🃏", img:"images/dummy_shippo.png" },
+  hizume:         { emoji:"🃏", img:"images/dummy_hizume.png" },
+  hanasaki:       { emoji:"🃏", img:"images/dummy_hanasaki.png" },
+  tategami_extra: { emoji:"🃏", img:"images/dummy_tategami_extra.png" }
+};
+
+var LABELS = {
+  akami:"赤身", tategami:"タテガミ", futagoe:"フタゴエ", koune:"コウネ", reba:"レバー", hire:"ヒレ",
+  tencho:"店長",
+  shippo:"尻尾トロ", hizume:"ヒヅメステーキ", hanasaki:"鼻先スジ", tategami_extra:"たてがみエキストラ"
 };
 
 var LEVELS = [
@@ -409,6 +429,15 @@ var LEVELS = [
     ],
     // 出題の重み(店長は出現率低め・トラップ)
     weightedKeys:["akami","akami","akami","tategami","tategami","tategami","futagoe","futagoe","futagoe","tencho"]
+  },
+  {
+    id:2,
+    timeMs:30000,
+    bossKey:"tencho",
+    // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
+    cutPool:["akami","tategami","futagoe","koune","reba","hire"],
+    // ニセ部位プール(実在しない部位名。店長皿=ゴミ箱行きが正解)
+    dummyPool:["shippo","hizume","hanasaki","tategami_extra"]
   }
 ];
 
@@ -416,7 +445,9 @@ var PLACEHOLDER_URL = "https://fukunaga0717.github.io/UmakichiGame/";
 
 /* ---------------- 状態 ---------------- */
 var state = {
+  selectedLevelId: 1,
   level: LEVELS[0],
+  round: null, // ゲーム開始時に buildRoundData() で生成(お皿の割当と出題プール)
   score: 0,
   currentCard: null,
   lastKey: null,
@@ -504,6 +535,7 @@ levelButtons.forEach(function(btn){
     if(btn.disabled) return;
     levelButtons.forEach(function(b){ b.classList.remove("active"); });
     btn.classList.add("active");
+    state.selectedLevelId = parseInt(btn.dataset.level, 10);
   });
 });
 
@@ -547,12 +579,44 @@ var hudScore = document.getElementById("hud-score");
 var flashOverlay = document.getElementById("flash-overlay");
 var gameoverOverlay = document.getElementById("gameover-overlay");
 
+function shuffleArray(arr){
+  for(var i = arr.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+// レベル定義から「今回のラウンド」の皿割当と出題プールを組み立てる
+// (レベル2はゲーム開始のたびに実在部位3つ・お皿の位置をシャッフルする)
+function buildRoundData(level){
+  if(level.id === 1){
+    return { targets: level.targets, weightedKeys: level.weightedKeys };
+  }
+
+  var corners = shuffleArray(["TL","TR","BL"]);
+  var chosenCuts = shuffleArray(level.cutPool.slice()).slice(0, 3);
+  var targets = chosenCuts.map(function(key, i){
+    return { key:key, label:LABELS[key], corner:corners[i], trap:false };
+  });
+  targets.push({ key:level.bossKey, label:LABELS[level.bossKey], corner:"BR", trap:true });
+
+  var weightedKeys = [];
+  chosenCuts.forEach(function(key){
+    weightedKeys.push(key, key, key);
+  });
+  weightedKeys.push(level.bossKey);
+  level.dummyPool.forEach(function(key){ weightedKeys.push(key); });
+
+  return { targets: targets, weightedKeys: weightedKeys };
+}
+
 function buildPlates(){
   // 既存の皿を除去して作り直す(レベル拡張を見据えデータ駆動)
   var old = gameArea.querySelectorAll(".plate");
   old.forEach(function(p){ p.remove(); });
 
-  state.level.targets.forEach(function(t){
+  state.round.targets.forEach(function(t){
     var plate = document.createElement("div");
     plate.className = "plate" + (t.trap ? " trap" : "");
     plate.dataset.corner = t.corner;
@@ -572,15 +636,20 @@ function buildPlates(){
 function getPlateEl(corner){
   return gameArea.querySelector('.plate[data-corner="'+corner+'"]');
 }
-function getTargetByCorner(corner){
-  return state.level.targets.filter(function(t){ return t.corner === corner; })[0];
-}
-function getTargetByKey(key){
-  return state.level.targets.filter(function(t){ return t.key === key; })[0];
+
+// カードのキーから「本物の部位/店長/ニセ部位」を判定し、正解の皿(コーナー)を決める
+// ニセ部位は実在しないので、店長のお皿(トラップ枠=ゴミ箱)に捨てるのが正解
+function resolveCardMeta(key){
+  var target = state.round.targets.filter(function(t){ return t.key === key; })[0];
+  if(target){
+    return { key:key, label:target.label, correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
+  }
+  var trapTarget = state.round.targets.filter(function(t){ return t.trap; })[0];
+  return { key:key, label:LABELS[key], correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
 }
 
 function pickNextKey(){
-  var pool = state.level.weightedKeys;
+  var pool = state.round.weightedKeys;
   var key;
   var tries = 0;
   do{
@@ -595,14 +664,14 @@ function pickNextKey(){
 function spawnCard(){
   state.locked = false;
   var key = pickNextKey();
-  var target = getTargetByKey(key);
-  state.currentCard = target;
+  var card = resolveCardMeta(key);
+  state.currentCard = card;
 
   meatCard.innerHTML = "";
   meatCard.appendChild(buildVisual(key));
   var label = document.createElement("div");
   label.className = "card-label";
-  label.textContent = target.label;
+  label.textContent = card.label;
   meatCard.appendChild(label);
 
   meatCard.style.transition = "none";
@@ -616,6 +685,8 @@ function updateScoreDisplay(){
 }
 
 function startGame(){
+  state.level = LEVELS.filter(function(l){ return l.id === state.selectedLevelId; })[0] || LEVELS[0];
+  state.round = buildRoundData(state.level);
   state.score = 0;
   state.lastKey = null;
   state.lastKey2 = null;
@@ -740,8 +811,7 @@ function resolveFlick(corner, dx, dy){
 }
 
 function handleResolution(corner, plateEl){
-  var target = getTargetByCorner(corner);
-  var correct = target && state.currentCard && target.key === state.currentCard.key;
+  var correct = state.currentCard && corner === state.currentCard.correctCorner;
 
   if(correct){
     state.score++;
@@ -752,13 +822,20 @@ function handleResolution(corner, plateEl){
     setTimeout(function(){ plateEl.classList.remove("bounce"); }, 420);
     spawnCard();
   } else {
-    showMissFeedback(state.currentCard && state.currentCard.key === "tencho");
+    showMissFeedback(state.currentCard);
   }
 }
 
-function showMissFeedback(special){
+function showMissFeedback(card){
   state.missCount++;
-  if(special) state.humanMissCount++;
+
+  var kind = "normal";
+  if(card && card.isBoss){
+    kind = "boss";
+    state.humanMissCount++;
+  } else if(card && card.isDummy){
+    kind = "dummy";
+  }
 
   beep(140,0.35,"sawtooth");
   vibrate([100,50,100]);
@@ -767,9 +844,12 @@ function showMissFeedback(special){
 
   var bigEl = document.getElementById("gameover-big");
   var smallEl = document.getElementById("gameover-small");
-  if(special){
+  if(kind === "boss"){
     bigEl.textContent = "それ人間！！";
     smallEl.textContent = "店長は仕入れ先じゃありません";
+  } else if(kind === "dummy"){
+    bigEl.textContent = "そんな部位、無い！！";
+    smallEl.textContent = "適当な名前に騙されるな";
   } else {
     bigEl.textContent = "ちがう皿！！";
     smallEl.textContent = "お皿を間違えました";
@@ -821,7 +901,11 @@ var TRIVIA = [
   "馬は体温が高く筋肉内に寄生虫や菌が繁殖しにくいため、馬肉は生（馬刺し）で食べられる数少ない肉。",
   "馬肉は牛肉・豚肉に比べて低カロリー・低脂質なのに鉄分は豊富。ヘルシー志向のお客さんにもおすすめ。",
   "馬肉は栄養価の高さから「薬食い」とも呼ばれ、古くから滋養強壮の食材とされてきた。",
-  "店長は部位ではありません。お会計はしっかりお願いします。"
+  "店長は部位ではありません。お会計はしっかりお願いします。",
+  "コウネは首元の柔らかい脂身。とろけるような食感で馬肉通に人気の部位。",
+  "レバーは鉄分たっぷり。新鮮な馬レバ刺しは臭みが少なくねっとり濃厚。",
+  "ヒレは一頭からわずかしか取れない超希少部位。上品な赤身の旨みが凝縮。",
+  "「尻尾トロ」や「ヒヅメステーキ」は実在しません。当店のメニューにもないのでご注意を。"
 ];
 function getTaunt(){
   var score = state.score;
