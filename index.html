@@ -18,7 +18,7 @@
    images/shimofuri.png        … 霜降りの写真
    上記ファイル名で index.html と同じ階層の "images" フォルダに
    画像を置くだけで、絵文字から自動的に写真表示に切り替わります。
-   （画像が無い場合は今まで通り絵文字が表示されます）
+   （画像が無い場合は絵文字が表示されます）
    ========================================================= */
 
 :root{
@@ -202,8 +202,6 @@ button{font-family:inherit;}
 .plate[data-corner="BL"]{bottom:10px; left:10px;}
 .plate[data-corner="BR"]{bottom:10px; right:10px;}
 .plate.trap{border-color:#8a8a8a; background:radial-gradient(circle at 35% 30%, #fdfdfd, #d8d8d8 70%, #b3b3b3 100%);}
-.plate .visual{width:clamp(30px,9vw,46px); height:clamp(30px,9vw,46px);}
-.plate .visual-emoji{font-size:clamp(24px,8vw,40px); line-height:1;}
 .plate-label{
   margin-top:0; font-size:clamp(13px,3.8vw,16px); font-weight:900; color:var(--ink);
   white-space:nowrap;
@@ -227,9 +225,15 @@ button{font-family:inherit;}
   will-change:transform;
   padding:10px;
 }
+.meat-card.has-image{
+  width:clamp(150px,42vw,210px);
+  height:clamp(150px,42vw,210px);
+  padding:10px;
+}
 .meat-card .visual{width:clamp(82px,22vw,118px); height:clamp(82px,22vw,118px); display:flex; align-items:center; justify-content:center;}
+.meat-card.has-image .visual{width:100%; height:100%;}
 .meat-card .visual-emoji{font-size:clamp(38px,12vw,60px); line-height:1;}
-.visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px;}
+.visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px; display:block;}
 .card-label{font-size:clamp(18px,6vw,26px); font-weight:900; color:var(--ink); text-align:center;}
 
 @media (max-height: 720px){
@@ -251,9 +255,19 @@ button{font-family:inherit;}
     height:clamp(148px,37vw,186px);
   }
 
+  .meat-card.has-image{
+    width:clamp(140px,39vw,190px);
+    height:clamp(140px,39vw,190px);
+  }
+
   .meat-card .visual{
     width:clamp(76px,20vw,104px);
     height:clamp(76px,20vw,104px);
+  }
+
+  .meat-card.has-image .visual{
+    width:100%;
+    height:100%;
   }
 }
 
@@ -462,6 +476,7 @@ var LABELS = {
 };
 
 var CORNER_DIR_LABELS = { TL:"左上", TR:"右上", BL:"左下", BR:"右下" };
+var OUT_OF_TARGET_LABEL = "対象外";
 
 var LEVELS = [
   {
@@ -482,7 +497,7 @@ var LEVELS = [
     bossKey:"tencho",
     // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
     cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"],
-    // ニセ部位プール(実在しない部位名。店長皿=ゴミ箱行きが正解)
+    // ニセ部位プール(実在しない部位名。対象外の皿が正解)
     dummyPool:["shippo","hizume","hanasaki","tategami_extra"]
   }
 ];
@@ -555,27 +570,30 @@ function vibrate(pattern){
 
 /* ---------------- ビジュアル生成(絵文字/画像フォールバック) ---------------- */
 function buildVisual(key){
-  var asset = ASSETS[key];
+  var asset = ASSETS[key] || { emoji:"？", img:null };
   var wrap = document.createElement("div");
   wrap.className = "visual";
 
-  var emoji = document.createElement("div");
-  emoji.className = "visual-emoji";
-  emoji.textContent = asset.emoji;
-  wrap.appendChild(emoji);
+  function appendEmoji(){
+    var emoji = document.createElement("div");
+    emoji.className = "visual-emoji";
+    emoji.textContent = asset.emoji;
+    wrap.appendChild(emoji);
+  }
 
   if(asset.img){
     var img = document.createElement("img");
     img.className = "visual-img";
-    img.style.display = "none";
     img.alt = "";
     img.draggable = false;
-    img.addEventListener("load", function(){
-      img.style.display = "block";
-      emoji.style.display = "none";
+    img.addEventListener("error", function(){
+      wrap.innerHTML = "";
+      appendEmoji();
     });
     img.src = asset.img;
     wrap.appendChild(img);
+  } else {
+    appendEmoji();
   }
 
   return wrap;
@@ -681,9 +699,8 @@ function buildPlates(){
     // 四隅の皿には料理画像を表示しない。画像は中央カードのみ表示する。
     var label = document.createElement("div");
     label.className = "plate-label";
-    // 店長の皿は正体を隠すため、皿の表示ラベルだけ固定で「捨てる」にする
-    // (中央に出るカード自体の表示名は resolveCardMeta 側で "店長" のまま)
-    label.textContent = t.trap ? "捨てる" : t.label;
+    // 店長やニセ部位は料理ではないため、右下の皿は「対象外」とする。
+    label.textContent = t.trap ? OUT_OF_TARGET_LABEL : t.label;
     plate.appendChild(label);
 
     gameArea.appendChild(plate);
@@ -695,14 +712,14 @@ function getPlateEl(corner){
 }
 
 // カードのキーから「本物の部位/店長/ニセ部位」を判定し、正解の皿(コーナー)を決める
-// ニセ部位は実在しないので、店長のお皿(トラップ枠=ゴミ箱)に捨てるのが正解
+// ニセ部位は実在しないので、対象外の皿が正解
 function resolveCardMeta(key){
   var target = state.round.targets.filter(function(t){ return t.key === key; })[0];
   if(target){
-    return { key:key, label:target.label, correctLabel:target.label, correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
+    return { key:key, label:target.label, correctLabel:(target.trap ? OUT_OF_TARGET_LABEL : target.label), correctCorner:target.corner, isBoss:!!target.trap, isDummy:false };
   }
   var trapTarget = state.round.targets.filter(function(t){ return t.trap; })[0];
-  return { key:key, label:LABELS[key], correctLabel:trapTarget.label, correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
+  return { key:key, label:LABELS[key], correctLabel:OUT_OF_TARGET_LABEL, correctCorner:trapTarget.corner, isBoss:false, isDummy:true };
 }
 
 function pickNextKey(){
@@ -722,14 +739,21 @@ function spawnCard(){
   state.locked = false;
   var key = pickNextKey();
   var card = resolveCardMeta(key);
+  var asset = ASSETS[key] || { img:null };
   state.currentCard = card;
 
   meatCard.innerHTML = "";
+  meatCard.classList.toggle("has-image", !!asset.img);
   meatCard.appendChild(buildVisual(key));
-  var label = document.createElement("div");
-  label.className = "card-label";
-  label.textContent = card.label;
-  meatCard.appendChild(label);
+
+  // 画像がある部位はクイズ性を保つため、カード上に部位名を表示しない。
+  // 店長・ニセ部位など画像がないカードのみ、識別用の文字を表示する。
+  if(!asset.img){
+    var label = document.createElement("div");
+    label.className = "card-label";
+    label.textContent = card.label;
+    meatCard.appendChild(label);
+  }
 
   meatCard.style.transition = "none";
   meatCard.style.opacity = "1";
