@@ -237,10 +237,20 @@ button{font-family:inherit;}
 }
 .result-panel .label{font-size:13px; color:#cbb9a0; font-weight:700;}
 .result-panel .score{font-size:clamp(48px,16vw,72px); font-weight:900; color:var(--gold-2); text-shadow:0 3px 0 #000;}
+.result-panel .miss-count{margin-top:2px; font-size:13px; font-weight:700; color:#e08a7a;}
 .result-panel .taunt{margin-top:8px; font-size:15px; font-weight:700; line-height:1.6; color:var(--cream);}
 .result-actions{display:flex; flex-direction:column; gap:12px; width:100%; max-width:360px;}
 .share-row{display:flex; gap:10px;}
 .share-row .btn{flex:1; font-size:14px; padding:12px 8px;}
+
+.trivia-panel{
+  background:var(--panel-2); border:2px solid var(--gold); border-radius:14px;
+  padding:16px 18px; width:100%; max-width:360px; text-align:center;
+  box-shadow:0 4px 0 rgba(0,0,0,.35);
+}
+.trivia-label{font-size:13px; font-weight:900; color:var(--gold-2); margin-bottom:8px;}
+.trivia-text{font-size:14px; line-height:1.7; color:var(--cream); font-weight:700;}
+.trivia-hook{margin-top:10px; font-size:12px; color:#cbb9a0; font-weight:700;}
 
 /* ---------- 店員確認画面 ---------- */
 #screen-staff{align-items:center; justify-content:center; padding:24px 20px; gap:16px; text-align:center;}
@@ -337,7 +347,14 @@ button{font-family:inherit;}
     <div class="result-panel">
       <div class="label">RESULT</div>
       <div class="score" id="result-score">0</div>
+      <div class="miss-count" id="result-miss"></div>
       <div class="taunt" id="result-taunt"></div>
+    </div>
+
+    <div class="trivia-panel">
+      <div class="trivia-label">📖 本日の豆知識</div>
+      <div class="trivia-text" id="result-trivia"></div>
+      <div class="trivia-hook">気になったらそのまま追加注文！</div>
     </div>
 
     <div class="result-actions">
@@ -409,8 +426,8 @@ var state = {
   startX:0, startY:0, curX:0, curY:0, dragStartTime:0,
   timerRafId: null,
   gameStartTs: 0,
-  gameOverReason: null, // 'timeup' | 'wrong'
-  gameOverSpecial: false,
+  missCount: 0,
+  humanMissCount: 0,
   staffIntervalId: null,
   audioCtx: null
 };
@@ -603,8 +620,8 @@ function startGame(){
   state.lastKey = null;
   state.lastKey2 = null;
   state.locked = false;
-  state.gameOverReason = null;
-  state.gameOverSpecial = false;
+  state.missCount = 0;
+  state.humanMissCount = 0;
   updateScoreDisplay();
   gameoverOverlay.classList.remove("active");
   buildPlates();
@@ -621,7 +638,7 @@ function tickTimer(){
   var remain = state.level.timeMs - elapsed;
   if(remain <= 0){
     hudTimer.textContent = "0";
-    endGame("timeup");
+    endGame();
     return;
   }
   var sec = Math.ceil(remain/1000);
@@ -735,14 +752,14 @@ function handleResolution(corner, plateEl){
     setTimeout(function(){ plateEl.classList.remove("bounce"); }, 420);
     spawnCard();
   } else {
-    triggerGameOver(state.currentCard && state.currentCard.key === "tencho");
+    showMissFeedback(state.currentCard && state.currentCard.key === "tencho");
   }
 }
 
-function triggerGameOver(special){
-  stopTimer();
-  state.gameOverReason = "wrong";
-  state.gameOverSpecial = !!special;
+function showMissFeedback(special){
+  state.missCount++;
+  if(special) state.humanMissCount++;
+
   beep(140,0.35,"sawtooth");
   vibrate([100,50,100]);
   gameArea.classList.add("shake");
@@ -754,21 +771,22 @@ function triggerGameOver(special){
     bigEl.textContent = "それ人間！！";
     smallEl.textContent = "店長は仕入れ先じゃありません";
   } else {
-    bigEl.textContent = "しくじった…！";
+    bigEl.textContent = "ちがう皿！！";
     smallEl.textContent = "お皿を間違えました";
   }
   gameoverOverlay.classList.add("active");
 
   setTimeout(function(){
     gameArea.classList.remove("shake");
-    showResult();
-  }, 1400);
+    gameoverOverlay.classList.remove("active");
+    if(screens.game.classList.contains("active")){
+      spawnCard();
+    }
+  }, 800);
 }
 
-function endGame(reason){
+function endGame(){
   stopTimer();
-  state.gameOverReason = reason;
-  state.gameOverSpecial = false;
   showResult();
 }
 
@@ -795,13 +813,23 @@ gameArea.addEventListener("touchmove", function(e){
 }, {passive:false});
 
 /* ---------------- 結果画面 ---------------- */
+var TRIVIA = [
+  "赤身は低脂肪・高タンパク。さっぱりした甘みで生姜醤油と好相性。",
+  "タテガミは首の下にある白い脂身。コリコリ食感で、赤身と一緒に食べると最強コンビ。",
+  "フタゴエはあばら周りの希少部位。脂の甘みが濃厚で、部位の中でも特に貴重。",
+  "馬肉が「桜肉」と呼ばれるのは、切った時の断面が桜色をしているから。",
+  "馬は体温が高く筋肉内に寄生虫や菌が繁殖しにくいため、馬肉は生（馬刺し）で食べられる数少ない肉。",
+  "馬肉は牛肉・豚肉に比べて低カロリー・低脂質なのに鉄分は豊富。ヘルシー志向のお客さんにもおすすめ。",
+  "馬肉は栄養価の高さから「薬食い」とも呼ばれ、古くから滋養強壮の食材とされてきた。",
+  "店長は部位ではありません。お会計はしっかりお願いします。"
+];
 function getTaunt(){
   var score = state.score;
-  if(state.gameOverReason === "wrong"){
-    if(state.gameOverSpecial){
-      return "店長を肉と間違えるとは…人間やめるレベルの珍プレー。";
-    }
-    return "スコア"+score+"点で終了…お肉、まだまだ覚える気ありますか？";
+  if(state.humanMissCount > 0){
+    return "店長を"+state.humanMissCount+"回も肉と間違えるとは…人間やめるレベルの珍プレー。";
+  }
+  if(state.missCount === 0 && score > 0){
+    return "ノーミス"+score+"点！お見事、もう部位マスター名乗っていいレベル。";
   }
   if(score <= 0) return "開店休業レベル。まずは赤身から覚えよう。";
   if(score <= 4) return "バイト初日レベル。奥はまだ広いぞ。";
@@ -814,6 +842,8 @@ function getTaunt(){
 function showResult(){
   document.getElementById("result-score").textContent = state.score;
   document.getElementById("result-taunt").textContent = getTaunt();
+  document.getElementById("result-miss").textContent = "ミス " + state.missCount + "回";
+  document.getElementById("result-trivia").textContent = TRIVIA[Math.floor(Math.random()*TRIVIA.length)];
   showScreen("result");
 }
 
