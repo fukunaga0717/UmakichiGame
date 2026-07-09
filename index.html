@@ -10,7 +10,7 @@
    画像の差し替え方法（お店の方向け）
    images/akami.png            … 赤身の写真
    images/tategami.png         … タテガミの写真
-   images/futagoe.png          … フタゴエの写真
+   images/futagoe.png          … フタエゴの写真
    images/tencho.png           … 店長の写真
    images/koune.png            … コウネの写真（レベル2）
    images/reba.png             … レバーの写真（レベル2）
@@ -143,7 +143,11 @@ button{font-family:inherit;}
 @keyframes popIn{0%{transform:scale(.3); opacity:0;}60%{transform:scale(1.15); opacity:1;}100%{transform:scale(1);}}
 
 /* ---------- ゲーム画面 ---------- */
-#screen-game{position:relative; padding:8px; gap:0;}
+#screen-game{
+  position:relative;
+  padding:8px 8px calc(var(--safe-b) + 72px);
+  gap:0;
+}
 #hud{
   display:flex; align-items:center; justify-content:space-between;
   padding:4px 10px 8px;
@@ -172,6 +176,18 @@ button{font-family:inherit;}
   border:2px solid #3a2f26;
   touch-action:none;
   overflow:hidden;
+}
+
+@keyframes shakeX{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-8px);}
+  40%{transform:translateX(8px);}
+  60%{transform:translateX(-6px);}
+  80%{transform:translateX(6px);}
+}
+
+#game-area.shake{
+  animation:shakeX .35s ease;
 }
 
 .plate{
@@ -218,6 +234,26 @@ button{font-family:inherit;}
 .meat-card .visual-emoji{font-size:clamp(38px,12vw,60px); line-height:1;}
 .meat-card .visual-img{width:100%; height:100%; object-fit:cover; border-radius:8px;}
 .card-label{font-size:clamp(18px,6vw,26px); font-weight:900; color:var(--ink); text-align:center;}
+
+@media (max-height: 720px){
+  .plate{
+    width:clamp(68px,22vw,100px);
+    height:clamp(68px,22vw,100px);
+    border-width:4px;
+  }
+
+  .plate-label{
+    font-size:clamp(9px,2.7vw,12px);
+    max-width:92%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .meat-card{
+    width:clamp(110px,30vw,150px);
+    height:clamp(138px,36vw,180px);
+  }
+}
 
 #flash-overlay{
   position:absolute; inset:0; background:#ff2b20; opacity:0; pointer-events:none; z-index:25;
@@ -416,7 +452,7 @@ var ASSETS = {
 };
 
 var LABELS = {
-  akami:"赤身", tategami:"タテガミ", futagoe:"フタゴエ", koune:"コウネ", reba:"レバー", hire:"ヒレ",
+  akami:"赤身", tategami:"タテガミ", futagoe:"フタエゴ", koune:"コウネ", reba:"レバー", hire:"ヒレ",
   tencho:"店長",
   shippo:"尻尾トロ", hizume:"ヒヅメステーキ", hanasaki:"鼻先スジ", tategami_extra:"たてがみエキストラ"
 };
@@ -430,7 +466,7 @@ var LEVELS = [
     targets:[
       { key:"akami",    label:"赤身",     corner:"TL", trap:false },
       { key:"tategami", label:"タテガミ", corner:"TR", trap:false },
-      { key:"futagoe",  label:"フタゴエ", corner:"BL", trap:false },
+      { key:"futagoe",  label:"フタエゴ", corner:"BL", trap:false },
       { key:"tencho",   label:"店長",     corner:"BR", trap:true  }
     ],
     // 出題の重み(店長は出現率低め・トラップ)
@@ -466,7 +502,8 @@ var state = {
   missCount: 0,
   humanMissCount: 0,
   staffIntervalId: null,
-  audioCtx: null
+  audioCtx: null,
+  countingDown: false
 };
 
 /* ---------------- 画面切替 ---------------- */
@@ -487,6 +524,10 @@ function unlockAudio(){
       var AC = window.AudioContext || window.webkitAudioContext;
       state.audioCtx = new AC();
     }catch(e){ state.audioCtx = null; }
+  }
+
+  if(state.audioCtx && state.audioCtx.state === "suspended" && state.audioCtx.resume){
+    state.audioCtx.resume();
   }
 }
 function beep(freq, dur, type){
@@ -553,6 +594,8 @@ document.getElementById("start-btn").addEventListener("click", function(){
 
 /* ---------------- カウントダウン ---------------- */
 function goCountdown(){
+  if(state.countingDown) return;
+  state.countingDown = true;
   showScreen("countdown");
   var n = 3;
   var el = document.getElementById("countdown-num");
@@ -571,6 +614,7 @@ function goCountdown(){
       beep(880,0.2,"triangle");
     } else {
       clearInterval(timer);
+      state.countingDown = false;
       startGame();
     }
   }, 700);
@@ -632,9 +676,9 @@ function buildPlates(){
 
     var label = document.createElement("div");
     label.className = "plate-label";
-    // 店長の皿は正体を隠すため、皿の表示ラベルだけ固定で「ダミー」にする
+    // 店長の皿は正体を隠すため、皿の表示ラベルだけ固定で「捨てる」にする
     // (中央に出るカード自体の表示名は resolveCardMeta 側で "店長" のまま)
-    label.textContent = t.trap ? "ダミー" : t.label;
+    label.textContent = t.trap ? "捨てる" : t.label;
     plate.appendChild(label);
 
     gameArea.appendChild(plate);
@@ -809,11 +853,25 @@ function resolveFlick(corner, dx, dy){
   var moveY = dy + (plateCY - cardCY);
   var rot = Math.max(-MAX_ROT, Math.min(MAX_ROT, dx * 0.06));
 
-  function onEnd(){
+  var finished = false;
+  var fallbackId = null;
+
+  function finish(){
+    if(finished) return;
+    finished = true;
     meatCard.removeEventListener("transitionend", onEnd);
+    if(fallbackId) clearTimeout(fallbackId);
     handleResolution(corner, plateEl);
   }
+
+  function onEnd(e){
+    if(e.target !== meatCard) return;
+    finish();
+  }
+
   meatCard.addEventListener("transitionend", onEnd);
+  fallbackId = setTimeout(finish, 350);
+
   meatCard.style.transition = "transform .22s ease-in";
   meatCard.style.transform = "translate("+moveX+"px,"+moveY+"px) rotate("+rot+"deg) scale(.3)";
 }
@@ -917,9 +975,9 @@ gameArea.addEventListener("touchmove", function(e){
 var TRIVIA = [
   "赤身は低脂肪・高タンパク。さっぱりした甘みで生姜醤油と好相性。",
   "タテガミは首の下にある白い脂身。コリコリ食感で、赤身と一緒に食べると最強コンビ。",
-  "フタゴエはあばら周りの希少部位。脂の甘みが濃厚で、部位の中でも特に貴重。",
+  "フタエゴはあばら周りの希少部位。脂の甘みが濃厚で、部位の中でも特に貴重。",
   "馬肉が「桜肉」と呼ばれるのは、切った時の断面が桜色をしているから。",
-  "馬は体温が高く筋肉内に寄生虫や菌が繁殖しにくいため、馬肉は生（馬刺し）で食べられる数少ない肉。",
+  "衛生管理された馬刺し用の馬肉は、生食文化のある数少ない肉のひとつ。新鮮さと管理が大事。",
   "馬肉は牛肉・豚肉に比べて低カロリー・低脂質なのに鉄分は豊富。ヘルシー志向のお客さんにもおすすめ。",
   "馬肉は栄養価の高さから「薬食い」とも呼ばれ、古くから滋養強壮の食材とされてきた。",
   "店長は部位ではありません。お会計はしっかりお願いします。",
