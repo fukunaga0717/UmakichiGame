@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#141110">
-<title>馬肉仕分け★クソゲー | ウマキチ都立家政店</title>
+<title>馬刺仕分け | ウマキチ都立家政店</title>
 <style>
 /* =========================================================
    画像の差し替え方法（お店の方向け）
@@ -440,7 +440,7 @@ button{font-family:inherit;}
   <section id="screen-start" class="screen active">
     <div class="start-header">
       <span class="badge-tag">酔っ払い注意</span>
-      <h1 class="izaka-title">馬肉仕分け<br>★クソゲー★<small>ウマキチ都立家政店</small></h1>
+      <h1 class="izaka-title">馬刺仕分け<small>ウマキチ都立家政店</small></h1>
     </div>
     <p class="start-sub">中央に出てくる肉カードを、正しいお皿めがけて指でフリック！<br>間違えるとペナルティ演出…店長は食べちゃダメだぞ🧑‍🍳</p>
 
@@ -1311,13 +1311,13 @@ document.getElementById("btn-result-home").addEventListener("click", function(){
 /* ---------------- シェア ---------------- */
 function buildShareText(){
   var taunt = getTaunt();
-  return "【ウマキチ都立家政店】馬肉仕分けクソゲーで"+state.score+"点獲得！"+taunt+" 挑戦はこちら→";
+  return "【ウマキチ都立家政店】馬刺仕分けゲームで"+state.score+"点獲得！"+taunt+" 挑戦はこちら→";
 }
 document.getElementById("btn-share-x").addEventListener("click", function(){
   var text = buildShareText();
   var url = "https://twitter.com/intent/tweet?text="+encodeURIComponent(text)
     + "&url=" + encodeURIComponent(PLACEHOLDER_URL)
-    + "&hashtags=" + encodeURIComponent("ウマキチ都立家政店,馬肉仕分けクソゲー");
+    + "&hashtags=" + encodeURIComponent("ウマキチ都立家政店,馬刺仕分け");
   window.open(url, "_blank");
 });
 document.getElementById("btn-share-line").addEventListener("click", function(){
