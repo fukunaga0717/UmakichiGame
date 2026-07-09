@@ -366,7 +366,7 @@ button{font-family:inherit;}
       </button>
       <button type="button" class="level-btn" data-level="2">
         <span class="level-num">Lv.2</span>
-        <span class="level-name">ニセ部位まじり</span>
+        <span class="level-name">対象外まじり</span>
       </button>
       <button type="button" class="level-btn" data-level="3" disabled>
         <span class="level-num">Lv.3</span>
@@ -496,9 +496,7 @@ var LEVELS = [
     timeMs:30000,
     bossKey:"tencho",
     // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
-    cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"],
-    // ニセ部位プール(実在しない部位名。対象外の皿が正解)
-    dummyPool:["shippo","hizume","hanasaki","tategami_extra"]
+    cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"]
   }
 ];
 
@@ -670,6 +668,7 @@ function buildRoundData(level){
 
   var corners = shuffleArray(["TL","TR","BL"]);
   var chosenCuts = shuffleArray(level.cutPool.slice()).slice(0, 3);
+  var dummyCuts = level.cutPool.filter(function(key){ return chosenCuts.indexOf(key) === -1; });
   var targets = chosenCuts.map(function(key, i){
     return { key:key, label:LABELS[key], corner:corners[i], trap:false };
   });
@@ -680,7 +679,7 @@ function buildRoundData(level){
     weightedKeys.push(key, key, key);
   });
   weightedKeys.push(level.bossKey);
-  level.dummyPool.forEach(function(key){ weightedKeys.push(key); });
+  shuffleArray(dummyCuts.slice()).forEach(function(key){ weightedKeys.push(key); });
 
   return { targets: targets, weightedKeys: weightedKeys };
 }
@@ -699,7 +698,7 @@ function buildPlates(){
     // 四隅の皿には料理画像を表示しない。画像は中央カードのみ表示する。
     var label = document.createElement("div");
     label.className = "plate-label";
-    // 店長やニセ部位は料理ではないため、右下の皿は「対象外」とする。
+    // 店長や対象外カード用に、右下の皿は「対象外」とする。
     label.textContent = t.trap ? OUT_OF_TARGET_LABEL : t.label;
     plate.appendChild(label);
 
@@ -711,8 +710,8 @@ function getPlateEl(corner){
   return gameArea.querySelector('.plate[data-corner="'+corner+'"]');
 }
 
-// カードのキーから「本物の部位/店長/ニセ部位」を判定し、正解の皿(コーナー)を決める
-// ニセ部位は実在しないので、対象外の皿が正解
+// カードのキーから「本物の部位/店長/対象外部位」を判定し、正解の皿(コーナー)を決める
+// 今回の皿にない実在部位は、対象外の皿が正解
 function resolveCardMeta(key){
   var target = state.round.targets.filter(function(t){ return t.key === key; })[0];
   if(target){
@@ -747,7 +746,7 @@ function spawnCard(){
   meatCard.appendChild(buildVisual(key));
 
   // 画像がある部位はクイズ性を保つため、カード上に部位名を表示しない。
-  // 店長・ニセ部位など画像がないカードのみ、識別用の文字を表示する。
+  // 店長など画像がないカードのみ、識別用の文字を表示する。
   if(!asset.img){
     var label = document.createElement("div");
     label.className = "card-label";
@@ -944,8 +943,8 @@ function showMissFeedback(card){
     bigEl.textContent = "それ人間！！";
     smallEl.textContent = "店長は仕入れ先じゃありません";
   } else if(kind === "dummy"){
-    bigEl.textContent = "そんな部位、無い！！";
-    smallEl.textContent = "適当な名前に騙されるな";
+    bigEl.textContent = "今回は対象外！！";
+    smallEl.textContent = "表示されている皿にない部位です";
   } else {
     bigEl.textContent = "ちがう皿！！";
     smallEl.textContent = "お皿を間違えました";
@@ -954,7 +953,8 @@ function showMissFeedback(card){
   var correctPlateEl = null;
   if(card && card.correctCorner){
     var dir = CORNER_DIR_LABELS[card.correctCorner] || card.correctCorner;
-    answerEl.textContent = "正解は" + dir + "の『" + card.correctLabel + "』でした";
+    var cardName = card.label ? "これは『" + card.label + "』です。 " : "";
+    answerEl.textContent = cardName + "正解は" + dir + "の『" + card.correctLabel + "』でした";
     correctPlateEl = getPlateEl(card.correctCorner);
     if(correctPlateEl) correctPlateEl.classList.add("hint");
   } else {
@@ -1014,7 +1014,7 @@ var TRIVIA = [
   "馬肉は牛肉・豚肉に比べて低カロリー・低脂質なのに鉄分は豊富。ヘルシー志向のお客さんにもおすすめ。",
   "馬肉は栄養価の高さから「薬食い」とも呼ばれ、古くから滋養強壮の食材とされてきた。",
   "店長は部位ではありません。お会計はしっかりお願いします。",
-  "「尻尾トロ」や「ヒヅメステーキ」は実在しません。当店のメニューにもないのでご注意を。"
+  "Lv.2では、皿に表示されていない部位は対象外。画像だけで見分けられたらかなりの馬肉通。"
 ];
 function getTaunt(){
   var score = state.score;
