@@ -28,9 +28,9 @@
         <span class="level-num">Lv.2</span>
         <span class="level-name">対象外まじり</span>
       </button>
-      <button type="button" class="level-btn" data-level="3" disabled>
+      <button type="button" class="level-btn" data-level="3">
         <span class="level-num">Lv.3</span>
-        <span class="level-name">準備中…</span>
+        <span class="level-name">1秒チェンジ</span>
       </button>
     </div>
 
@@ -154,6 +154,7 @@ var state = {
   locked: false, // アニメ中の操作ロック
   startX:0, startY:0, curX:0, curY:0, dragStartTime:0,
   timerRafId: null,
+  cardAutoTimerId: null,
   gameStartTs: 0,
   missCount: 0,
   humanMissCount: 0,
@@ -367,12 +368,13 @@ function resolveCardMeta(key){
 
 function pickNextKey(){
   var pool = state.round.weightedKeys;
+  var avoidAnyRepeat = !!(state.level && state.level.cardAutoAdvanceMs);
   var key;
   var tries = 0;
   do{
     key = pool[Math.floor(Math.random()*pool.length)];
     tries++;
-  } while(key === state.lastKey && key === state.lastKey2 && tries < 12);
+  } while((avoidAnyRepeat ? (key === state.lastKey) : (key === state.lastKey && key === state.lastKey2)) && tries < 12);
   state.lastKey2 = state.lastKey;
   state.lastKey = key;
   return key;
@@ -402,6 +404,8 @@ function spawnCard(){
   meatCard.style.opacity = "1";
   meatCard.style.transform = "translate(0px,0px) rotate(0deg) scale(1)";
   void meatCard.offsetWidth;
+
+  startCardAutoAdvanceIfNeeded();
 }
 
 function updateScoreDisplay(){
@@ -457,8 +461,26 @@ function stopTimer(){
   }
 }
 
+function stopCardAutoAdvance(){
+  if(state.cardAutoTimerId){
+    clearTimeout(state.cardAutoTimerId);
+    state.cardAutoTimerId = null;
+  }
+}
+function startCardAutoAdvanceIfNeeded(){
+  stopCardAutoAdvance();
+  if(!state.level || !state.level.cardAutoAdvanceMs) return;
+  state.cardAutoTimerId = setTimeout(function(){
+    state.cardAutoTimerId = null;
+    if(!screens.game.classList.contains("active")) return;
+    if(state.locked || state.dragging) return;
+    spawnCard();
+  }, state.level.cardAutoAdvanceMs);
+}
+
 function returnToStartFromGame(){
   stopTimer();
+  stopCardAutoAdvance();
   state.dragging = false;
   state.locked = false;
   state.countingDown = false;
@@ -488,6 +510,7 @@ function pointFromEvent(e){
 
 function onDragStart(e){
   if(state.locked) return;
+  stopCardAutoAdvance();
   var p = pointFromEvent(e);
   state.dragging = true;
   state.startX = p.x; state.startY = p.y;
@@ -588,6 +611,7 @@ function handleResolution(corner, plateEl){
 }
 
 function showMissFeedback(card){
+  stopCardAutoAdvance();
   state.missCount++;
   if(card && card.key && LEARN_DATA[card.key]){
     state.missedKeys.push(card.key);
@@ -648,6 +672,7 @@ function showMissFeedback(card){
 
 function endGame(){
   stopTimer();
+  stopCardAutoAdvance();
   showResult();
 }
 

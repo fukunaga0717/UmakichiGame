@@ -95,6 +95,14 @@ var LEVELS = [
     bossKey:"tencho",
     // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
     cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"]
+  },
+  {
+    id:3,
+    timeMs:30000,
+    bossKey:"tencho",
+    cardAutoAdvanceMs:1000,
+    // 実在部位プール(毎ゲーム開始時にここから3つをシャッフルして採用)
+    cutPool:["akami","tategami","futagoe","hatsu","tan","karubi","reba","shimofuri"]
   }
 ];
 
