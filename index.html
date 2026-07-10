@@ -624,7 +624,7 @@ function showMissFeedback(card){
     var dir = CORNER_DIR_LABELS[card.correctCorner] || card.correctCorner;
     var answerText = dir + "の「" + card.correctLabel + "」へ！";
     if(kind === "dummy"){
-      answerText = "今回の皿にはありません。" + answerText;
+      answerText = "皿にない部位です。" + answerText;
     }
     answerEl.textContent = answerText;
     correctPlateEl = getPlateEl(card.correctCorner);
