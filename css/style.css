@@ -256,14 +256,23 @@ button{font-family:inherit;}
   inset:0;
   z-index:22;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
   pointer-events:none;
   opacity:0;
-  font-size:min(34vw,160px);
+  line-height:1;
   font-weight:900;
   color:#fff;
   text-shadow:0 4px 0 #178f45, 0 0 18px rgba(255,255,255,.75);
+}
+#correct-overlay .correct-main{
+  font-size:min(34vw,160px);
+}
+#correct-overlay .correct-sub{
+  margin-top:4px;
+  font-size:clamp(18px,5vw,28px);
+  font-weight:900;
 }
 #correct-overlay.active{animation:correctPop .36s ease;}
 @keyframes correctPop{

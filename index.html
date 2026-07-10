@@ -55,7 +55,7 @@
       <div id="card-layer">
         <div id="meat-card" class="meat-card"></div>
       </div>
-      <div id="correct-overlay">○</div>
+      <div id="correct-overlay"><div class="correct-main">○</div><div class="correct-sub">正解！</div></div>
       <div id="flash-overlay"></div>
       <div id="gameover-overlay">
         <div class="gameover-box">
@@ -412,6 +412,7 @@ function showCorrectFeedback(){
   if(!correctOverlay) return;
   correctOverlay.classList.remove("active");
   void correctOverlay.offsetWidth;
+  correctOverlay.innerHTML = '<div class="correct-main">○</div><div class="correct-sub">正解！</div>';
   correctOverlay.classList.add("active");
 }
 
