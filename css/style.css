@@ -337,7 +337,8 @@ button{font-family:inherit;}
 .gameover-box .answer{margin-top:12px; font-size:14px; font-weight:900; color:var(--gold-2);}
 
 /* ---------- 結果画面 ---------- */
-#screen-result{align-items:center; justify-content:flex-start; padding:24px 20px; gap:14px; overflow-y:auto;}
+#screen-result{align-items:center; justify-content:flex-start; padding:24px 20px calc(var(--safe-b) + 24px); gap:14px; overflow-y:auto;}
+#screen-result > *{flex-shrink:0;}
 .result-panel{
   background:var(--panel); border:2px dashed var(--gold); border-radius:16px;
   padding:20px; text-align:center; width:100%; max-width:360px;

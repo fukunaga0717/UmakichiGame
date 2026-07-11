@@ -792,6 +792,7 @@ function showResult(){
   document.getElementById("result-trivia").textContent = TRIVIA[Math.floor(Math.random()*TRIVIA.length)];
   setupLearningPanel();
   showScreen("result");
+  screens.result.scrollTop = 0;
 }
 
 document.getElementById("btn-retry").addEventListener("click", function(){
