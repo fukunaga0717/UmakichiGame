@@ -555,6 +555,7 @@ function detectCorner(dx,dy){
 function springBack(){
   meatCard.style.transition = "transform .28s cubic-bezier(.34,1.56,.64,1)";
   meatCard.style.transform = "translate(0px,0px) rotate(0deg) scale(1)";
+  startCardAutoAdvanceIfNeeded();
 }
 
 function resolveFlick(corner, dx, dy){
@@ -594,6 +595,7 @@ function resolveFlick(corner, dx, dy){
 }
 
 function handleResolution(corner, plateEl){
+  if(!screens.game.classList.contains("active")) return;
   var correct = state.currentCard && corner === state.currentCard.correctCorner;
 
   if(correct){
