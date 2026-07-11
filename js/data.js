@@ -124,3 +124,15 @@ var TRIVIA = [
   "店長は部位ではありません。お会計はしっかりお願いします。",
   "Lv.2では、皿に表示されていない部位は対象外。画像だけで見分けられたらかなりの馬肉通。"
 ];
+
+/* ---------------- 再挑戦促進機能の読み込み ---------------- */
+(function(){
+  var link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "css/engagement.css";
+  document.head.appendChild(link);
+
+  var script = document.createElement("script");
+  script.src = "js/engagement.js";
+  document.head.appendChild(script);
+})();
