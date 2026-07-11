@@ -162,6 +162,7 @@ function resetRun(){
   missedLabels = [];
   missCount = 0;
   resultSnapshot = null;
+  missOverlayWasActive = false;
   updateComboHud();
 }
 
@@ -204,11 +205,16 @@ function updateOrderHook(){
 function processResult(){
   if(resultProcessed) return;
   resultProcessed = true;
-  runActive = false;
 
+  // 最後の正解直後に時間切れになった場合でも、MutationObserverの通知前に
+  // 結果画面が開く可能性があるため、HUDの値との差分をここで補完する。
   var scoreEl = document.getElementById("hud-score");
   var parsedScore = scoreEl ? parseInt(scoreEl.textContent.replace(/\D/g, ""), 10) : currentScore;
+  if(Number.isFinite(parsedScore) && parsedScore > currentScore){
+    for(var i = currentScore; i < parsedScore; i++) onCorrect();
+  }
   if(Number.isFinite(parsedScore)) currentScore = parsedScore;
+  runActive = false;
 
   var records = loadRecords();
   var previous = getLevelRecord(records, currentLevelId);
